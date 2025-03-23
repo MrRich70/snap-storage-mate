@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { UserX } from 'lucide-react';
+import { UserX, CheckCircle, XCircle } from 'lucide-react';
 import { AuthUser } from '@/lib/auth/types';
 
 interface UserTableProps {
@@ -36,6 +36,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, handleDeleteUser 
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Access Code</TableHead>
+            <TableHead>Email Confirmed</TableHead>
             <TableHead>Role</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -43,7 +44,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, handleDeleteUser 
         <TableBody>
           {users.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+              <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                 No users found
               </TableCell>
             </TableRow>
@@ -53,6 +54,19 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, handleDeleteUser 
                 <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.accessCode || 'N/A'}</TableCell>
+                <TableCell>
+                  {user.emailConfirmed ? (
+                    <div className="flex items-center">
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
+                      <span>Confirmed</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center">
+                      <XCircle className="h-4 w-4 text-red-500 mr-1" />
+                      <span>Not Confirmed</span>
+                    </div>
+                  )}
+                </TableCell>
                 <TableCell>
                   {user.isAdmin ? (
                     <Badge variant="default" className="bg-purple-500">Admin</Badge>

@@ -5,25 +5,18 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  accessCode?: string;
-  isAdmin?: boolean;
+  accessCode: string;
+  isAdmin: boolean;
+  emailConfirmed: boolean;
 }
 
-export const mapUserToAuthUser = (user: User | null, metadata?: { name?: string; accessCode?: string }): AuthUser | null => {
-  if (!user) return null;
-  
-  const accessCode = metadata?.accessCode || user.user_metadata.accessCode || '';
-  const isAdmin = accessCode.toLowerCase() === 'njoyadmin';
-  
+export const mapUserToAuthUser = (user: User): AuthUser => {
   return {
     id: user.id,
     email: user.email || '',
-    name: metadata?.name || user.user_metadata.name || '',
-    accessCode,
-    isAdmin
+    name: user.user_metadata?.name || '',
+    accessCode: user.user_metadata?.accessCode || '',
+    isAdmin: (user.user_metadata?.accessCode || '').toLowerCase() === 'njoyadmin',
+    emailConfirmed: !!user.email_confirmed_at
   };
-};
-
-export const isValidAccessCode = (accessCode: string): boolean => {
-  return accessCode.toLowerCase() === 'servpro' || accessCode.toLowerCase() === 'njoyadmin';
 };
