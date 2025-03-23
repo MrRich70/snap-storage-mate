@@ -9,6 +9,7 @@ import {
   Loader2Icon 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import Navigation from '@/components/Navigation';
 import FolderGrid from '@/components/FolderGrid';
 import ImageGrid from '@/components/ImageGrid';
