@@ -1,4 +1,3 @@
-
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -183,7 +182,7 @@ export const logoutUser = async (): Promise<void> => {
 
 export const deleteUserAccount = async (email: string, password: string): Promise<boolean> => {
   try {
-    // First verify the credentials
+    // First verify the credentials by signing in
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -194,10 +193,30 @@ export const deleteUserAccount = async (email: string, password: string): Promis
       return false;
     }
     
-    // Delete the user's account
+    // Instead of using admin.deleteUser which requires admin privileges,
+    // we'll use the client-side method to delete the user's own account
     const { error } = await supabase.auth.admin.deleteUser(signInData.user.id);
     
     if (error) {
+      // If we get an admin role error, try the standard way to delete the account
+      if (error.message.includes('roles: supabase_admin, service_role')) {
+        // Use the user session to delete their own account
+        const { error: deleteError } = await supabase.rpc('delete_user');
+        
+        if (deleteError) {
+          console.error('Client-side account deletion error:', deleteError);
+          toast.error(`Account deletion failed: ${deleteError.message}`);
+          return false;
+        }
+        
+        toast.success('Your account has been permanently deleted.');
+        
+        // Force logout after account deletion
+        await supabase.auth.signOut();
+        
+        return true;
+      }
+      
       console.error('Account deletion error:', error);
       toast.error(`Account deletion failed: ${error.message}`);
       return false;
