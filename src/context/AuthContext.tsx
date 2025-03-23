@@ -12,7 +12,8 @@ import {
   getAllUsers,
   adminDeleteUser,
   adminDeleteAllUsers,
-  confirmUserEmail
+  confirmUserEmail,
+  adminCreateUser
 } from '@/lib/auth';
 
 interface AuthContextType {
@@ -31,6 +32,7 @@ interface AuthContextType {
   deleteUser: (userId: string) => Promise<boolean>;
   deleteAllUsers: (exceptUserId: string) => Promise<boolean>;
   confirmEmail: (email: string) => Promise<boolean>;
+  createUser: (name: string, email: string, password: string, accessCode: string) => Promise<{success: boolean; error?: string}>;
 }
 
 // Initialize with default values to prevent the "must be used within a Provider" error
@@ -49,6 +51,7 @@ const AuthContext = createContext<AuthContextType>({
   deleteUser: async () => false,
   deleteAllUsers: async () => false,
   confirmEmail: async () => false,
+  createUser: async () => ({ success: false }),
 });
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -89,6 +92,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     },
     confirmEmail: async (email) => {
       return await confirmUserEmail(email);
+    },
+    createUser: async (name, email, password, accessCode) => {
+      return await adminCreateUser(name, email, password, accessCode);
     }
   };
 

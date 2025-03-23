@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { AuthUser } from './types';
 
@@ -108,5 +107,46 @@ export const confirmUserEmail = async (email: string): Promise<boolean> => {
   } catch (error) {
     console.error('Error in confirmUserEmail:', error);
     return false;
+  }
+};
+
+/**
+ * Creates a new user as an admin
+ */
+export const adminCreateUser = async (
+  name: string,
+  email: string,
+  password: string,
+  accessCode: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    console.log('Admin creating user:', { email, name, accessCode });
+    
+    // Use supabase admin createUser API
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        name,
+        accessCode
+      }
+    });
+    
+    if (error) {
+      console.error('Admin user creation error:', error);
+      return { success: false, error: error.message };
+    }
+    
+    // Also attempt to confirm the email manually
+    await confirmUserEmail(email);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error in adminCreateUser:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'An unexpected error occurred' 
+    };
   }
 };
