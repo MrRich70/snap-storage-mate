@@ -8,7 +8,7 @@ import { AuthUser } from './types';
 export const getAllUsers = async (): Promise<AuthUser[]> => {
   try {
     // Call the RPC function to get all users
-    const { data, error } = await supabase.functions.rpc('get_all_users') as { 
+    const { data, error } = await supabase.rpc('get_all_users') as { 
       data: Array<{
         id: string;
         email: string;
@@ -49,7 +49,7 @@ export const getAllUsers = async (): Promise<AuthUser[]> => {
  */
 export const adminDeleteUser = async (userId: string): Promise<boolean> => {
   try {
-    const { error } = await supabase.functions.rpc('delete_user', { user_id: userId }) as { 
+    const { error } = await supabase.rpc('delete_user', { user_id: userId }) as { 
       data: null;
       error: any;
     };
@@ -71,7 +71,7 @@ export const adminDeleteUser = async (userId: string): Promise<boolean> => {
  */
 export const adminDeleteAllUsers = async (exceptUserId: string): Promise<boolean> => {
   try {
-    const { error } = await supabase.functions.rpc('delete_all_users', { except_user_id: exceptUserId }) as { 
+    const { error } = await supabase.rpc('delete_all_users', { except_user_id: exceptUserId }) as { 
       data: null;
       error: any;
     };
@@ -93,7 +93,7 @@ export const adminDeleteAllUsers = async (exceptUserId: string): Promise<boolean
  */
 export const confirmUserEmail = async (email: string): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.functions.rpc('confirm_user_email', { user_email: email }) as {
+    const { data, error } = await supabase.rpc('confirm_user_email', { user_email: email }) as {
       data: boolean | null;
       error: any;
     };

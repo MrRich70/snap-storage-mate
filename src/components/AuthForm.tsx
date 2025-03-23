@@ -56,8 +56,8 @@ const AuthForm: React.FC = () => {
         const { success, error } = await signup(name, email, password, accessCode);
         
         if (success) {
-          toast.success('Account created successfully! Please check your email to verify your account.');
-          setTimeout(() => toggleMode('login'), 3000);
+          toast.success('Account created successfully!');
+          setTimeout(() => toggleMode('login'), 2000);
         } else {
           setPassword('');
           setLoginError(error || 'Signup failed. Please try again.');
@@ -153,3 +153,4 @@ const AuthForm: React.FC = () => {
 };
 
 export default AuthForm;
+
