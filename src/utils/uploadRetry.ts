@@ -7,7 +7,8 @@ import { uploadFileToSupabase } from './uploadCore';
 export const retryUpload = async (
   uploadId: string, 
   file: File, 
-  folderId: string
+  folderId: string,
+  isSharedStorage = false
 ): Promise<string> => {
   const progress = uploadProgressMap.get(uploadId);
   if (!progress) {
@@ -22,7 +23,7 @@ export const retryUpload = async (
   
   try {
     // Use the same upload function but it will resume from where it left off
-    return await uploadFileToSupabase(file, folderId);
+    return await uploadFileToSupabase(file, folderId, isSharedStorage);
   } catch (error) {
     console.error('Retry failed:', error);
     updateProgress(uploadId, { 

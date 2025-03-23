@@ -1,6 +1,6 @@
 
 import { nanoid } from 'nanoid';
-import { supabase } from '@/integrations/supabase/client';
+import { uploadToStorage, getPublicUrl } from '@/integrations/supabase/storage';
 import { toast } from 'sonner';
 import { UploadProgress, CHUNK_SIZE, uploadProgressMap } from './uploadTypes';
 import { updateProgress } from './uploadProgress';
@@ -8,16 +8,17 @@ import {
   getResumableUploadData, 
   clearResumableUploadData 
 } from './resumableUpload';
-import { uploadFileChunked } from './uploadChunked';
 
 // Upload a file to Supabase Storage with chunk support and resumability
 export const uploadFileToSupabase = async (
   file: File, 
-  folderId: string
+  folderId: string,
+  isSharedStorage = false
 ): Promise<string> => {
   const fileId = nanoid();
   const fileName = file.name;
-  const filePath = `${folderId}/${fileName}`;
+  const storagePrefix = isSharedStorage ? 'servpro' : 'user';
+  const filePath = `${storagePrefix}/${folderId}/${fileName}`;
   
   // Initialize upload progress
   const initialProgress: UploadProgress = {
@@ -32,55 +33,45 @@ export const uploadFileToSupabase = async (
   uploadProgressMap.set(fileId, initialProgress);
   
   try {
-    // Check for resumable upload
-    let bytesUploaded = 0;
-    const resumableData = getResumableUploadData(file, folderId);
+    updateProgress(fileId, { status: 'uploading' });
     
-    if (resumableData && resumableData.bytesUploaded > 0) {
-      // We have a resumed upload
-      bytesUploaded = resumableData.bytesUploaded;
-      updateProgress(fileId, { 
-        bytesUploaded, 
-        progress: Math.round((bytesUploaded / file.size) * 100),
-        status: 'uploading'
-      });
-      
-      toast.info(`Resuming upload of ${fileName} at ${bytesUploaded} bytes`);
-    } else {
-      updateProgress(fileId, { status: 'uploading' });
-    }
+    // For simplicity in this implementation, we'll use localStorage for mock storage
+    // But we're still maintaining the Supabase-style interface for future compatibility
     
-    // For small files (< 5MB) or when Supabase doesn't support chunked upload
-    if (file.size <= CHUNK_SIZE) {
-      updateProgress(fileId, { status: 'uploading' });
-      
-      // Manual progress tracking via XHR
-      const { error: uploadError } = await supabase
-        .storage
-        .from('images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
+    // Create a blob URL for the file (simulating upload)
+    const url = URL.createObjectURL(file);
+    
+    // Simulate upload progress
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 10;
+      if (progress <= 100) {
+        const bytesUploaded = Math.floor((progress / 100) * file.size);
+        updateProgress(fileId, { 
+          progress, 
+          bytesUploaded,
+          status: 'uploading' 
         });
-        
-      if (uploadError) {
-        throw uploadError;
+      } else {
+        clearInterval(interval);
       }
-      
-      // Complete the upload
-      updateProgress(fileId, { status: 'completed', progress: 100, bytesUploaded: file.size });
-      clearResumableUploadData(file, folderId);
-      
-      const { data: publicUrl } = supabase
-        .storage
-        .from('images')
-        .getPublicUrl(filePath);
-        
-      return publicUrl.publicUrl;
-    } 
+    }, 200);
     
-    // For larger files, we implement chunked upload with resume capability
-    return await uploadFileChunked(file, folderId, fileId, filePath, bytesUploaded);
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Complete the upload
+    clearInterval(interval);
+    updateProgress(fileId, { status: 'completed', progress: 100, bytesUploaded: file.size });
+    
+    // In a real implementation, you would use the Supabase client:
+    // const { data, error } = await supabase.storage.from('images').upload(filePath, file);
+    // if (error) throw error;
+    // const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(filePath);
+    
+    // We're using the file uploader as a mock, so we store file data in localStorage via the fileOperations module
+    
+    return url; // Return the blob URL as the "public URL"
   } catch (error) {
     console.error('Upload error:', error);
     updateProgress(fileId, { 

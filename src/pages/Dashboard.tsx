@@ -219,6 +219,7 @@ const Dashboard: React.FC = () => {
           })
           .catch((error) => {
             console.error('Upload error:', error);
+            toast.error(`Failed to upload ${file.name}`);
           });
       }
       
@@ -396,3 +397,4 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+

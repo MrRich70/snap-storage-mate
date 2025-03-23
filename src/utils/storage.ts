@@ -3,6 +3,7 @@
 export * from './storageTypes';
 export * from './folderOperations';
 export * from './fileOperations';
+export * from './uploadTypes';
 export * from './uploadUtils';
 
 // Add initialization function for shared storage
