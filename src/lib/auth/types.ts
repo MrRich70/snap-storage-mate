@@ -22,7 +22,7 @@ export const mapUserToAuthUser = (user: User): AuthUser => {
 };
 
 // Valid access codes - can be customized as needed
-const VALID_ACCESS_CODES = ['njoy2024', 'njoycode', 'njoyadmin'];
+const VALID_ACCESS_CODES = ['njoy2024', 'njoycode', 'njoyadmin', 'servpro'];
 
 // Function to check if access code is valid
 export const isValidAccessCode = (accessCode: string): boolean => {
