@@ -18,17 +18,20 @@ export const retryUpload = async (
   // Reset progress to resume state
   updateProgress(uploadId, {
     status: 'uploading',
+    progress: 0,
+    bytesUploaded: 0,
     error: undefined
   });
   
   try {
-    // Use the same upload function but it will resume from where it left off
+    // Start a new upload with the same file
     return await uploadFileToSupabase(file, folderId, isSharedStorage);
   } catch (error) {
     console.error('Retry failed:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Retry failed';
     updateProgress(uploadId, { 
       status: 'error', 
-      error: error.message || 'Retry failed'
+      error: errorMessage
     });
     throw error;
   }

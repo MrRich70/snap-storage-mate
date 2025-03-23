@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { 
   ImageFile, 
@@ -42,7 +42,7 @@ export const useFileOperations = (currentFolderId: string, refreshTrigger: numbe
   }, [currentFolderId]);
   
   // Monitor upload progress
-  useCallback(() => {
+  useEffect(() => {
     const interval = setInterval(() => {
       const currentUploads = getUploadProgress();
       setUploadProgress(currentUploads);
@@ -138,10 +138,11 @@ export const useFileOperations = (currentFolderId: string, refreshTrigger: numbe
         try {
           await retryUpload(uploadId, cachedFile, currentFolderId, SHARED_STORAGE);
           setRefreshTrigger(prev => prev + 1);
+          return;
         } catch (error) {
           console.error('Retry failed:', error);
+          toast.error('Failed to retry upload');
         }
-        return;
       }
     }
     
@@ -159,7 +160,7 @@ export const useFileOperations = (currentFolderId: string, refreshTrigger: numbe
   }, []);
   
   // Load files when refreshTrigger changes
-  useCallback(() => {
+  useEffect(() => {
     loadFiles();
   }, [loadFiles, refreshTrigger]);
   

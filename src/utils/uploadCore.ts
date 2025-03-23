@@ -9,7 +9,7 @@ import {
   clearResumableUploadData 
 } from './resumableUpload';
 
-// Upload a file to Supabase Storage with chunk support and resumability
+// Upload a file to Supabase Storage with progress tracking
 export const uploadFileToSupabase = async (
   file: File, 
   folderId: string,
@@ -18,7 +18,8 @@ export const uploadFileToSupabase = async (
   const fileId = nanoid();
   const fileName = file.name;
   const storagePrefix = isSharedStorage ? 'servpro' : 'user';
-  const filePath = `${storagePrefix}/${folderId}/${fileName}`;
+  const filePath = `${storagePrefix}/${folderId}/${fileId}-${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+  const bucket = 'images';
   
   // Initialize upload progress
   const initialProgress: UploadProgress = {
@@ -35,48 +36,46 @@ export const uploadFileToSupabase = async (
   try {
     updateProgress(fileId, { status: 'uploading' });
     
-    // For simplicity in this implementation, we'll use localStorage for mock storage
-    // But we're still maintaining the Supabase-style interface for future compatibility
-    
-    // Create a blob URL for the file (simulating upload)
-    const url = URL.createObjectURL(file);
-    
-    // Simulate upload progress
+    // Upload the file to Supabase storage
     let progress = 0;
+    
+    // Update progress every 200ms to provide visual feedback
     const interval = setInterval(() => {
-      progress += 10;
-      if (progress <= 100) {
+      if (progress < 95) {
+        progress += 5;
         const bytesUploaded = Math.floor((progress / 100) * file.size);
         updateProgress(fileId, { 
           progress, 
           bytesUploaded,
           status: 'uploading' 
         });
-      } else {
-        clearInterval(interval);
       }
     }, 200);
     
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Actual upload to Supabase
+    await uploadToStorage(bucket, filePath, file, {
+      cacheControl: '3600',
+      upsert: true
+    });
+    
+    clearInterval(interval);
     
     // Complete the upload
-    clearInterval(interval);
-    updateProgress(fileId, { status: 'completed', progress: 100, bytesUploaded: file.size });
+    updateProgress(fileId, { 
+      status: 'completed', 
+      progress: 100, 
+      bytesUploaded: file.size 
+    });
     
-    // In a real implementation, you would use the Supabase client:
-    // const { data, error } = await supabase.storage.from('images').upload(filePath, file);
-    // if (error) throw error;
-    // const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(filePath);
+    // Get the public URL for the uploaded file
+    const publicUrl = getPublicUrl(bucket, filePath);
+    return publicUrl;
     
-    // We're using the file uploader as a mock, so we store file data in localStorage via the fileOperations module
-    
-    return url; // Return the blob URL as the "public URL"
   } catch (error) {
     console.error('Upload error:', error);
     updateProgress(fileId, { 
       status: 'error', 
-      error: error.message || 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
     
     toast.error(`Failed to upload ${fileName}`);
