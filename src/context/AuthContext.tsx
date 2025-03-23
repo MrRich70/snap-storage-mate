@@ -20,7 +20,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAdmin: boolean;
   login: (email: string, password: string, accessCode: string) => Promise<boolean>;
-  signup: (name: string, email: string, password: string, accessCode: string) => Promise<boolean>;
+  signup: (name: string, email: string, password: string, accessCode: string) => Promise<{success: boolean; error?: string}>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<boolean>;
   updatePassword: (password: string) => Promise<boolean>;

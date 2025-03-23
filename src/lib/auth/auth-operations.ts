@@ -58,20 +58,35 @@ export const signupWithPassword = async (
   email: string, 
   password: string,
   accessCode: string
-): Promise<boolean> => {
+): Promise<{ success: boolean; error?: string }> => {
   try {
     console.log('Signup attempt:', { name, email, accessCodeValid: isValidAccessCode(accessCode) });
     
+    // Validate input parameters
+    if (!name.trim()) {
+      return { success: false, error: 'Name is required' };
+    }
+    
+    if (!email.trim()) {
+      return { success: false, error: 'Email is required' };
+    }
+    
+    if (!password) {
+      return { success: false, error: 'Password is required' };
+    }
+    
+    if (password.length < 6) {
+      return { success: false, error: 'Password must be at least 6 characters long' };
+    }
+    
     // Validate access code
     if (!accessCode) {
-      toast.error('Access code is required');
-      return false;
+      return { success: false, error: 'Access code is required' };
     }
 
     // Check for valid access code
     if (!isValidAccessCode(accessCode)) {
-      toast.error('Invalid access code');
-      return false;
+      return { success: false, error: 'Invalid access code' };
     }
 
     // Sign up the user with email confirmation enabled
@@ -89,26 +104,21 @@ export const signupWithPassword = async (
     
     if (error) {
       console.error('Signup error:', error.message);
-      toast.error(error.message);
-      return false;
+      return { success: false, error: error.message };
     }
     
     if (data.user) {
       if (data.user.identities && data.user.identities.length === 0) {
-        toast.error('This email is already registered. Please log in instead.');
-        return false;
+        return { success: false, error: 'This email is already registered. Please log in instead.' };
       }
       
-      toast.success('Account created successfully! Please check your email to verify your account.');
-      return true;
+      return { success: true };
     } else {
-      toast.error('Signup failed');
-      return false;
+      return { success: false, error: 'Signup failed for unknown reasons' };
     }
   } catch (error) {
     console.error('Signup error:', error);
-    toast.error('Signup failed');
-    return false;
+    return { success: false, error: error instanceof Error ? error.message : 'An unexpected error occurred during signup' };
   }
 };
 
