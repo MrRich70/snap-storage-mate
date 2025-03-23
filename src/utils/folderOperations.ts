@@ -1,96 +1,130 @@
 
-import { nanoid } from 'nanoid';
-import { toast } from 'sonner';
 import { Folder } from './storageTypes';
-import { deleteFile, getFiles } from './fileOperations';
-
-// Initialize local storage with default folders
-export const initializeStorage = () => {
-  // Check if storage is already initialized
-  const folders = localStorage.getItem('folders');
-  
-  if (!folders) {
-    const defaultFolders: Folder[] = [
-      {
-        id: 'root',
-        name: 'My Files',
-        createdAt: new Date().toISOString(),
-        parentId: null
-      }
-    ];
-    localStorage.setItem('folders', JSON.stringify(defaultFolders));
-  }
-};
+import { v4 as uuidv4 } from 'uuid';
 
 // Get all folders
-export const getFolders = (): Folder[] => {
-  const folders = localStorage.getItem('folders');
-  return folders ? JSON.parse(folders) : [];
+export const getFolders = (isSharedStorage = false): Folder[] => {
+  const storageKey = isSharedStorage ? 'servpro_folders' : 'folders';
+  return JSON.parse(localStorage.getItem(storageKey) || '[]');
 };
 
-// Get folder by ID
-export const getFolder = (folderId: string): Folder | undefined => {
-  const folders = getFolders();
-  return folders.find(folder => folder.id === folderId);
+// Get a specific folder by ID
+export const getFolder = (folderId: string, isSharedStorage = false): Folder | null => {
+  const folders = getFolders(isSharedStorage);
+  return folders.find(folder => folder.id === folderId) || null;
 };
 
 // Create a new folder
-export const createFolder = (name: string, parentId: string | null = 'root'): Folder => {
-  const folders = getFolders();
+export const createFolder = (name: string, parentId: string, isSharedStorage = false): Folder => {
+  const folders = getFolders(isSharedStorage);
+  const storageKey = isSharedStorage ? 'servpro_folders' : 'folders';
   
   const newFolder: Folder = {
-    id: nanoid(),
+    id: uuidv4(),
     name,
+    parentId,
     createdAt: new Date().toISOString(),
-    parentId
+    updatedAt: new Date().toISOString()
   };
   
-  localStorage.setItem('folders', JSON.stringify([...folders, newFolder]));
-  toast.success(`Folder "${name}" created`);
+  folders.push(newFolder);
+  localStorage.setItem(storageKey, JSON.stringify(folders));
+  
   return newFolder;
 };
 
 // Rename a folder
-export const renameFolder = (folderId: string, newName: string): boolean => {
-  const folders = getFolders();
+export const renameFolder = (folderId: string, newName: string, isSharedStorage = false): boolean => {
+  const folders = getFolders(isSharedStorage);
+  const storageKey = isSharedStorage ? 'servpro_folders' : 'folders';
+  
   const folderIndex = folders.findIndex(folder => folder.id === folderId);
+  if (folderIndex === -1) return false;
   
-  if (folderIndex < 0) {
-    toast.error('Folder not found');
-    return false;
-  }
+  folders[folderIndex] = {
+    ...folders[folderIndex],
+    name: newName,
+    updatedAt: new Date().toISOString()
+  };
   
-  folders[folderIndex].name = newName;
-  localStorage.setItem('folders', JSON.stringify(folders));
-  toast.success(`Folder renamed to "${newName}"`);
+  localStorage.setItem(storageKey, JSON.stringify(folders));
   return true;
 };
 
 // Delete a folder and all its contents
-export const deleteFolder = async (folderId: string): Promise<boolean> => {
-  if (folderId === 'root') {
-    toast.error('Cannot delete root folder');
-    return false;
-  }
+export const deleteFolder = async (folderId: string, isSharedStorage = false): Promise<boolean> => {
+  if (folderId === 'root') return false; // Cannot delete root folder
   
   try {
-    // Get files in the folder
-    const files = await getFiles(folderId);
+    const folders = getFolders(isSharedStorage);
+    const storageKey = isSharedStorage ? 'servpro_folders' : 'folders';
+    const fileStorageKey = isSharedStorage ? 'servpro_files' : 'files';
     
-    // Delete all files in the folder
-    for (const file of files) {
-      await deleteFile(file.id, folderId);
-    }
+    // Find all child folder IDs recursively
+    const getAllChildFolderIds = (parentId: string): string[] => {
+      const directChildren = folders.filter(folder => folder.parentId === parentId);
+      const childIds = directChildren.map(folder => folder.id);
+      
+      return [
+        ...childIds,
+        ...directChildren.flatMap(folder => getAllChildFolderIds(folder.id))
+      ];
+    };
     
-    // Delete folder from local storage
-    const folders = getFolders().filter(folder => folder.id !== folderId);
-    localStorage.setItem('folders', JSON.stringify(folders));
+    const childFolderIds = getAllChildFolderIds(folderId);
+    const allFolderIdsToDelete = [folderId, ...childFolderIds];
     
-    toast.success('Folder deleted');
+    // Delete all child folders
+    const remainingFolders = folders.filter(folder => !allFolderIdsToDelete.includes(folder.id));
+    localStorage.setItem(storageKey, JSON.stringify(remainingFolders));
+    
+    // Delete all files in the folders
+    const files = JSON.parse(localStorage.getItem(fileStorageKey) || '{}');
+    allFolderIdsToDelete.forEach(id => {
+      delete files[id];
+    });
+    localStorage.setItem(fileStorageKey, JSON.stringify(files));
+    
     return true;
   } catch (error) {
     console.error('Error deleting folder:', error);
-    toast.error('Failed to delete folder');
     return false;
   }
+};
+
+// Move a folder to a new parent
+export const moveFolder = (folderId: string, newParentId: string, isSharedStorage = false): boolean => {
+  if (folderId === 'root') return false; // Cannot move root folder
+  if (folderId === newParentId) return false; // Cannot move to itself
+  
+  const folders = getFolders(isSharedStorage);
+  const storageKey = isSharedStorage ? 'servpro_folders' : 'folders';
+  
+  const folderIndex = folders.findIndex(folder => folder.id === folderId);
+  if (folderIndex === -1) return false;
+  
+  // Check if new parent exists
+  const newParent = folders.find(folder => folder.id === newParentId);
+  if (!newParent) return false;
+  
+  // Check for circular references
+  const checkCircular = (parentId: string, targetId: string): boolean => {
+    if (parentId === targetId) return true;
+    
+    const parent = folders.find(folder => folder.id === parentId);
+    if (!parent || !parent.parentId) return false;
+    
+    return checkCircular(parent.parentId, targetId);
+  };
+  
+  if (checkCircular(newParentId, folderId)) return false;
+  
+  folders[folderIndex] = {
+    ...folders[folderIndex],
+    parentId: newParentId,
+    updatedAt: new Date().toISOString()
+  };
+  
+  localStorage.setItem(storageKey, JSON.stringify(folders));
+  return true;
 };

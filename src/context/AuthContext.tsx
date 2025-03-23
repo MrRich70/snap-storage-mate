@@ -21,6 +21,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   isAdmin: boolean;
+  accessCode: string | null;
   login: (email: string, password: string, accessCode: string) => Promise<boolean>;
   signup: (name: string, email: string, password: string, accessCode: string) => Promise<{success: boolean; error?: string}>;
   logout: () => Promise<void>;
@@ -41,6 +42,7 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isLoading: true,
   isAdmin: false,
+  accessCode: null,
   login: async () => false,
   signup: async () => ({ success: false }),
   logout: async () => {},
@@ -62,6 +64,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isAuthenticated,
     isLoading,
     isAdmin: user?.isAdmin || false,
+    accessCode: user?.accessCode || null,
     login: async (email, password, accessCode) => {
       return await loginWithPassword(email, password, accessCode);
     },

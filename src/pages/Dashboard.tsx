@@ -32,10 +32,14 @@ import {
   clearCompletedUploads 
 } from '@/utils/uploadUtils';
 
+const SHARED_ACCESS_CODE = 'servpro';
+
 const Dashboard: React.FC = () => {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, accessCode } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const isSharedStorage = accessCode === SHARED_ACCESS_CODE;
   
   const [currentFolderId, setCurrentFolderId] = useState<string>('root');
   const [currentPath, setCurrentPath] = useState<Folder[]>([]);
@@ -79,9 +83,9 @@ const Dashboard: React.FC = () => {
   }, [isAuthenticated, navigate, authLoading]);
   
   useEffect(() => {
-    initializeStorage();
+    initializeStorage(isSharedStorage);
     loadCurrentFolder('root');
-  }, [refreshTrigger]);
+  }, [refreshTrigger, isSharedStorage]);
   
   useEffect(() => {
     resetSelection();
@@ -105,11 +109,11 @@ const Dashboard: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const allFolders = getFolders();
+      const allFolders = getFolders(isSharedStorage);
       const folderChildren = allFolders.filter(folder => folder.parentId === folderId);
       setFolders(folderChildren);
       
-      const folderFiles = await getFiles(folderId);
+      const folderFiles = await getFiles(folderId, isSharedStorage);
       setFiles(folderFiles);
       
       setCurrentFolderId(folderId);
@@ -161,7 +165,7 @@ const Dashboard: React.FC = () => {
   };
   
   const handleCreateFolder = (name: string) => {
-    createFolder(name, currentFolderId);
+    createFolder(name, currentFolderId, isSharedStorage);
     loadCurrentFolder(currentFolderId);
   };
   
@@ -172,7 +176,7 @@ const Dashboard: React.FC = () => {
   
   const handleRenameFolder = (newName: string) => {
     if (selectedFolder) {
-      renameFolder(selectedFolder.id, newName);
+      renameFolder(selectedFolder.id, newName, isSharedStorage);
       loadCurrentFolder(currentFolderId);
     }
   };
@@ -184,7 +188,7 @@ const Dashboard: React.FC = () => {
   
   const handleDeleteFolder = async () => {
     if (selectedFolder) {
-      await deleteFolder(selectedFolder.id);
+      await deleteFolder(selectedFolder.id, isSharedStorage);
       loadCurrentFolder(currentFolderId);
     }
   };
@@ -207,7 +211,7 @@ const Dashboard: React.FC = () => {
         const cacheKey = `${currentFolderId}_${file.name}_${Date.now()}`;
         newFileCache.set(cacheKey, file);
         
-        uploadFile(file, currentFolderId)
+        uploadFile(file, currentFolderId, isSharedStorage)
           .then(() => {
             if (i === files.length - 1) {
               setRefreshTrigger(prev => prev + 1);
@@ -235,7 +239,7 @@ const Dashboard: React.FC = () => {
   
   const handleRenameFile = async (newName: string) => {
     if (selectedFile) {
-      await renameFile(selectedFile.id, newName, currentFolderId);
+      await renameFile(selectedFile.id, newName, currentFolderId, isSharedStorage);
       loadCurrentFolder(currentFolderId);
     }
   };
@@ -247,7 +251,7 @@ const Dashboard: React.FC = () => {
   
   const handleDeleteFile = async () => {
     if (selectedFile) {
-      await deleteFile(selectedFile.id, currentFolderId);
+      await deleteFile(selectedFile.id, currentFolderId, isSharedStorage);
       loadCurrentFolder(currentFolderId);
     }
   };
@@ -265,7 +269,7 @@ const Dashboard: React.FC = () => {
     for (const [cacheKey, cachedFile] of fileCache.entries()) {
       if (cacheKey.includes(uploadId)) {
         try {
-          await retryUpload(uploadId, cachedFile, currentFolderId);
+          await retryUpload(uploadId, cachedFile, currentFolderId, isSharedStorage);
           setRefreshTrigger(prev => prev + 1);
         } catch (error) {
           console.error('Retry failed:', error);

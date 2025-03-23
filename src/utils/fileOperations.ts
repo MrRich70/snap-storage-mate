@@ -1,212 +1,147 @@
 
-import { nanoid } from 'nanoid';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { ImageFile } from './storageTypes';
-import { uploadFileToSupabase } from './uploadUtils';
+import { v4 as uuidv4 } from 'uuid';
 
-// Get all files in a specific folder
-export const getFiles = async (folderId: string): Promise<ImageFile[]> => {
+// Get all files in a folder
+export const getFiles = async (folderId: string, isSharedStorage = false): Promise<ImageFile[]> => {
   try {
-    const { data, error } = await supabase
-      .storage
-      .from('images')
-      .list(`${folderId}/`, {
-        sortBy: { column: 'name', order: 'asc' }
-      });
-    
-    if (error) {
-      console.error('Error fetching files:', error);
-      toast.error('Failed to fetch files');
-      return [];
-    }
-    
-    const imageFiles: ImageFile[] = [];
-    
-    for (const item of data || []) {
-      if (!item.name.startsWith('.')) { // Skip hidden files
-        const fileId = item.id || nanoid();
-        const filePath = `${folderId}/${item.name}`;
-        
-        const { data: publicUrl } = supabase
-          .storage
-          .from('images')
-          .getPublicUrl(filePath);
-          
-        const { data: thumbnailUrl } = supabase
-          .storage
-          .from('images')
-          .getPublicUrl(filePath);
-          
-        imageFiles.push({
-          id: fileId,
-          name: item.name,
-          url: publicUrl.publicUrl,
-          thumbnailUrl: thumbnailUrl.publicUrl,
-          size: item.metadata?.size || 0,
-          type: item.metadata?.mimetype || '',
-          folderId: folderId,
-          createdAt: item.created_at || new Date().toISOString(),
-          updatedAt: item.updated_at || new Date().toISOString()
-        });
-      }
-    }
-    
-    return imageFiles;
+    const storageKey = isSharedStorage ? 'servpro_files' : 'files';
+    const filesObj = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    return filesObj[folderId] || [];
   } catch (error) {
-    console.error('Error fetching files:', error);
-    toast.error('Failed to fetch files');
+    console.error('Error getting files:', error);
     return [];
   }
 };
 
-// Upload a file to Supabase Storage
-export const uploadFile = async (file: File, folderId: string): Promise<ImageFile> => {
-  const fileExt = file.name.split('.').pop();
-  const fileId = nanoid();
-  const fileName = file.name;
-
+// Create/upload a new file
+export const uploadFile = async (file: File, folderId: string, isSharedStorage = false): Promise<ImageFile> => {
   try {
-    // Use the enhanced upload utility
-    const publicUrl = await uploadFileToSupabase(file, folderId);
+    const storageKey = isSharedStorage ? 'servpro_files' : 'files';
+    const filesObj = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    
+    // Create a blob URL for the file
+    const url = URL.createObjectURL(file);
+    
+    // Generate thumbnail (for demonstration, we use the same URL)
+    const thumbnailUrl = url;
     
     const newFile: ImageFile = {
-      id: fileId,
-      name: fileName,
-      url: publicUrl,
-      thumbnailUrl: publicUrl,
-      size: file.size,
+      id: uuidv4(),
+      name: file.name,
       type: file.type,
-      folderId,
+      size: file.size,
+      url: url,
+      thumbnailUrl: thumbnailUrl,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
     
+    // Add the file to the folder
+    if (!filesObj[folderId]) {
+      filesObj[folderId] = [];
+    }
+    
+    filesObj[folderId].push(newFile);
+    localStorage.setItem(storageKey, JSON.stringify(filesObj));
+    
     return newFile;
   } catch (error) {
-    console.error('Upload error:', error);
-    toast.error('Failed to upload file');
+    console.error('Error uploading file:', error);
     throw error;
   }
 };
 
 // Rename a file
-export const renameFile = async (fileId: string, newName: string, folderId: string): Promise<boolean> => {
+export const renameFile = async (fileId: string, newName: string, folderId: string, isSharedStorage = false): Promise<boolean> => {
   try {
-    // Get the files in the folder to find the file
-    const files = await getFiles(folderId);
-    const file = files.find(f => f.id === fileId);
+    const storageKey = isSharedStorage ? 'servpro_files' : 'files';
+    const filesObj = JSON.parse(localStorage.getItem(storageKey) || '{}');
     
-    if (!file) {
-      toast.error('File not found');
-      return false;
-    }
+    if (!filesObj[folderId]) return false;
     
-    // Copy the file with the new name
-    const { error: copyError } = await supabase
-      .storage
-      .from('images')
-      .copy(`${folderId}/${file.name}`, `${folderId}/${newName}`);
-      
-    if (copyError) {
-      throw copyError;
-    }
+    const fileIndex = filesObj[folderId].findIndex(file => file.id === fileId);
+    if (fileIndex === -1) return false;
     
-    // Delete the original file
-    const { error: deleteError } = await supabase
-      .storage
-      .from('images')
-      .remove([`${folderId}/${file.name}`]);
-      
-    if (deleteError) {
-      throw deleteError;
-    }
+    filesObj[folderId][fileIndex] = {
+      ...filesObj[folderId][fileIndex],
+      name: newName,
+      updatedAt: new Date().toISOString()
+    };
     
-    toast.success(`File renamed to "${newName}"`);
+    localStorage.setItem(storageKey, JSON.stringify(filesObj));
     return true;
   } catch (error) {
-    console.error('Rename error:', error);
-    toast.error('Failed to rename file');
+    console.error('Error renaming file:', error);
     return false;
   }
 };
 
-// Move a file from one folder to another
-export const moveFile = async (fileId: string, sourceFolderId: string, targetFolderId: string): Promise<boolean> => {
-  try {
-    // Get the files in the source folder to find the file
-    const files = await getFiles(sourceFolderId);
-    const file = files.find(f => f.id === fileId);
-    
-    if (!file) {
-      toast.error('File not found');
-      return false;
-    }
-    
-    // Copy the file to the target folder
-    const { error: copyError } = await supabase
-      .storage
-      .from('images')
-      .copy(`${sourceFolderId}/${file.name}`, `${targetFolderId}/${file.name}`);
-      
-    if (copyError) {
-      throw copyError;
-    }
-    
-    // Delete the file from the source folder
-    const { error: deleteError } = await supabase
-      .storage
-      .from('images')
-      .remove([`${sourceFolderId}/${file.name}`]);
-      
-    if (deleteError) {
-      throw deleteError;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Move error:', error);
-    throw error;
-  }
-};
-
 // Delete a file
-export const deleteFile = async (fileId: string, folderId: string): Promise<boolean> => {
+export const deleteFile = async (fileId: string, folderId: string, isSharedStorage = false): Promise<boolean> => {
   try {
-    // Get the files in the folder to find the file
-    const files = await getFiles(folderId);
-    const file = files.find(f => f.id === fileId);
+    const storageKey = isSharedStorage ? 'servpro_files' : 'files';
+    const filesObj = JSON.parse(localStorage.getItem(storageKey) || '{}');
     
-    if (!file) {
-      toast.error('File not found');
-      return false;
+    if (!filesObj[folderId]) return false;
+    
+    const fileIndex = filesObj[folderId].findIndex(file => file.id === fileId);
+    if (fileIndex === -1) return false;
+    
+    // Revoke object URL to prevent memory leaks
+    URL.revokeObjectURL(filesObj[folderId][fileIndex].url);
+    if (filesObj[folderId][fileIndex].thumbnailUrl !== filesObj[folderId][fileIndex].url) {
+      URL.revokeObjectURL(filesObj[folderId][fileIndex].thumbnailUrl);
     }
     
-    const { error } = await supabase
-      .storage
-      .from('images')
-      .remove([`${folderId}/${file.name}`]);
-      
-    if (error) {
-      throw error;
-    }
-    
-    toast.success('File deleted');
+    filesObj[folderId].splice(fileIndex, 1);
+    localStorage.setItem(storageKey, JSON.stringify(filesObj));
     return true;
   } catch (error) {
-    console.error('Delete error:', error);
-    toast.error('Failed to delete file');
+    console.error('Error deleting file:', error);
     return false;
   }
 };
 
 // Download a file
 export const downloadFile = (file: ImageFile): void => {
-  const link = document.createElement('a');
-  link.href = file.url;
-  link.download = file.name;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  toast.success(`Downloading "${file.name}"`);
+  try {
+    const a = document.createElement('a');
+    a.href = file.url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (error) {
+    console.error('Error downloading file:', error);
+  }
+};
+
+// Move files to a different folder
+export const moveFiles = async (fileIds: string[], sourceFolderId: string, targetFolderId: string, isSharedStorage = false): Promise<boolean> => {
+  try {
+    const storageKey = isSharedStorage ? 'servpro_files' : 'files';
+    const filesObj = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    
+    if (!filesObj[sourceFolderId]) return false;
+    if (!filesObj[targetFolderId]) {
+      filesObj[targetFolderId] = [];
+    }
+    
+    // Find the files to move
+    const filesToMove = filesObj[sourceFolderId].filter(file => fileIds.includes(file.id));
+    if (filesToMove.length === 0) return false;
+    
+    // Remove files from source folder
+    filesObj[sourceFolderId] = filesObj[sourceFolderId].filter(file => !fileIds.includes(file.id));
+    
+    // Add files to target folder
+    filesObj[targetFolderId] = [...filesObj[targetFolderId], ...filesToMove];
+    
+    localStorage.setItem(storageKey, JSON.stringify(filesObj));
+    return true;
+  } catch (error) {
+    console.error('Error moving files:', error);
+    return false;
+  }
 };
