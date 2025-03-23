@@ -1,7 +1,6 @@
 import { nanoid } from 'nanoid';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Progress } from '@/components/ui/progress';
 
 export interface UploadProgress {
   id: string;
@@ -98,6 +97,27 @@ const clearResumableUploadData = (file: File, folderId: string) => {
   localStorage.removeItem(`upload:${resumeKey}`);
 };
 
+// Track the upload progress manually
+const createProgressHandler = (
+  uploadId: string,
+  start: number,
+  chunkSize: number,
+  totalSize: number
+) => {
+  return (progress: { count?: number; loaded?: number; total?: number }) => {
+    if (progress.loaded && progress.total) {
+      const chunkProgress = progress.loaded / progress.total;
+      const overallBytesUploaded = start + Math.round(chunkSize * chunkProgress);
+      const overallProgress = Math.round((overallBytesUploaded / totalSize) * 100);
+      
+      updateProgress(uploadId, { 
+        progress: overallProgress, 
+        bytesUploaded: overallBytesUploaded
+      });
+    }
+  };
+};
+
 // Upload a file to Supabase Storage with chunk support and resumability
 export const uploadFileToSupabase = async (
   file: File, 
@@ -142,19 +162,13 @@ export const uploadFileToSupabase = async (
     if (file.size <= CHUNK_SIZE) {
       updateProgress(fileId, { status: 'uploading' });
       
+      // Manual progress tracking via XHR
       const { error: uploadError } = await supabase
         .storage
         .from('images')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: true,
-          onUploadProgress: (progress) => {
-            const percent = progress.percent ? Math.round(progress.percent) : 0;
-            updateProgress(fileId, { 
-              progress: percent, 
-              bytesUploaded: Math.round(file.size * (percent / 100))
-            });
-          }
+          upsert: true
         });
         
       if (uploadError) {
@@ -195,22 +209,13 @@ export const uploadFileToSupabase = async (
       });
       
       try {
+        // Upload the chunk without progress handler - we'll track progress manually
         const { error: chunkError } = await supabase
           .storage
           .from('images')
           .upload(chunkPath, chunk, {
             cacheControl: '3600',
-            upsert: true,
-            onUploadProgress: (progress) => {
-              const chunkProgress = progress.percent ? progress.percent / 100 : 0;
-              const overallBytesUploaded = start + Math.round(chunk.size * chunkProgress);
-              const overallProgress = Math.round((overallBytesUploaded / file.size) * 100);
-              
-              updateProgress(fileId, { 
-                progress: overallProgress, 
-                bytesUploaded: overallBytesUploaded
-              });
-            }
+            upsert: true
           });
           
         if (chunkError) {

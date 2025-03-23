@@ -52,6 +52,7 @@ const Dashboard: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<ImageFile | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
   const [uploadProgress, setUploadProgress] = useState<any[]>([]);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   
   const [newFolderModalOpen, setNewFolderModalOpen] = useState<boolean>(false);
   const [renameFolderModalOpen, setRenameFolderModalOpen] = useState<boolean>(false);
@@ -73,12 +74,20 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     initializeStorage();
     loadCurrentFolder('root');
-  }, []);
+  }, [refreshTrigger]);
   
   // Update upload progress periodically
   useEffect(() => {
     const interval = setInterval(() => {
-      setUploadProgress(getUploadProgress());
+      const currentUploads = getUploadProgress();
+      setUploadProgress(currentUploads);
+      
+      // Check if any uploads completed since last check
+      const completedUploads = currentUploads.filter(u => u.status === 'completed');
+      if (completedUploads.length > 0 && currentUploads.every(u => u.status !== 'uploading')) {
+        // If all uploads are either completed or error, refresh the file list
+        setRefreshTrigger(prev => prev + 1);
+      }
     }, 500);
     
     return () => clearInterval(interval);
@@ -190,7 +199,8 @@ const Dashboard: React.FC = () => {
           .then(() => {
             // Refresh the file list after all uploads
             if (i === files.length - 1) {
-              loadCurrentFolder(currentFolderId);
+              // Trigger a refresh
+              setRefreshTrigger(prev => prev + 1);
             }
           })
           .catch((error) => {
@@ -247,7 +257,8 @@ const Dashboard: React.FC = () => {
       if (cacheKey.includes(uploadId)) {
         try {
           await retryUpload(uploadId, cachedFile, currentFolderId);
-          loadCurrentFolder(currentFolderId);
+          // Auto-refresh when upload completed
+          setRefreshTrigger(prev => prev + 1);
         } catch (error) {
           console.error('Retry failed:', error);
         }
