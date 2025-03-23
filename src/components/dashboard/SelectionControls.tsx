@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { CheckSquare, Trash2Icon, DownloadIcon, XIcon } from 'lucide-react';
+import { CheckSquare, Trash2Icon, DownloadIcon, XIcon, FolderIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { ImageFile } from '@/utils/storage';
 
@@ -14,6 +14,7 @@ interface SelectionControlsProps {
   onDeselectAll: () => void;
   onDeleteSelected: () => void;
   onDownloadSelected: () => void;
+  onMoveSelected: () => void;
 }
 
 const SelectionControls: React.FC<SelectionControlsProps> = ({
@@ -24,7 +25,8 @@ const SelectionControls: React.FC<SelectionControlsProps> = ({
   onSelectAll,
   onDeselectAll,
   onDeleteSelected,
-  onDownloadSelected
+  onDownloadSelected,
+  onMoveSelected
 }) => {
   const allSelected = selectedFiles.length === allFiles.length && allFiles.length > 0;
   const someSelected = selectedFiles.length > 0 && selectedFiles.length < allFiles.length;
@@ -68,6 +70,16 @@ const SelectionControls: React.FC<SelectionControlsProps> = ({
               >
                 <DownloadIcon className="h-4 w-4" />
                 <span>Download {selectedFiles.length}</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onMoveSelected}
+                className="flex items-center gap-1"
+              >
+                <FolderIcon className="h-4 w-4" />
+                <span>Move {selectedFiles.length}</span>
               </Button>
               
               <Button

@@ -131,6 +131,45 @@ export const renameFile = async (fileId: string, newName: string, folderId: stri
   }
 };
 
+// Move a file from one folder to another
+export const moveFile = async (fileId: string, sourceFolderId: string, targetFolderId: string): Promise<boolean> => {
+  try {
+    // Get the files in the source folder to find the file
+    const files = await getFiles(sourceFolderId);
+    const file = files.find(f => f.id === fileId);
+    
+    if (!file) {
+      toast.error('File not found');
+      return false;
+    }
+    
+    // Copy the file to the target folder
+    const { error: copyError } = await supabase
+      .storage
+      .from('images')
+      .copy(`${sourceFolderId}/${file.name}`, `${targetFolderId}/${file.name}`);
+      
+    if (copyError) {
+      throw copyError;
+    }
+    
+    // Delete the file from the source folder
+    const { error: deleteError } = await supabase
+      .storage
+      .from('images')
+      .remove([`${sourceFolderId}/${file.name}`]);
+      
+    if (deleteError) {
+      throw deleteError;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Move error:', error);
+    throw error;
+  }
+};
+
 // Delete a file
 export const deleteFile = async (fileId: string, folderId: string): Promise<boolean> => {
   try {

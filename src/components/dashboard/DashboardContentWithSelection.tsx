@@ -4,6 +4,7 @@ import FolderGrid from '@/components/FolderGrid';
 import ImageGrid from '@/components/ImageGrid';
 import LoadingState from '@/components/dashboard/LoadingState';
 import SelectionControls from '@/components/dashboard/SelectionControls';
+import MoveFilesModal from '@/components/dashboard/MoveFilesModal';
 import { Folder, ImageFile } from '@/utils/storage';
 
 interface DashboardContentWithSelectionProps {
@@ -25,6 +26,11 @@ interface DashboardContentWithSelectionProps {
   onDeselectAll: () => void;
   onDeleteSelected: () => void;
   onDownloadSelected: () => void;
+  onMoveSelected: () => void;
+  moveModalOpen: boolean;
+  setMoveModalOpen: (open: boolean) => void;
+  currentFolderId: string;
+  refreshFiles: () => void;
 }
 
 const DashboardContentWithSelection: React.FC<DashboardContentWithSelectionProps> = ({
@@ -45,7 +51,12 @@ const DashboardContentWithSelection: React.FC<DashboardContentWithSelectionProps
   onSelectAll,
   onDeselectAll,
   onDeleteSelected,
-  onDownloadSelected
+  onDownloadSelected,
+  onMoveSelected,
+  moveModalOpen,
+  setMoveModalOpen,
+  currentFolderId,
+  refreshFiles
 }) => {
   if (isLoading) {
     return <LoadingState />;
@@ -63,6 +74,7 @@ const DashboardContentWithSelection: React.FC<DashboardContentWithSelectionProps
           onDeselectAll={onDeselectAll}
           onDeleteSelected={onDeleteSelected}
           onDownloadSelected={onDownloadSelected}
+          onMoveSelected={onMoveSelected}
         />
       )}
       
@@ -91,6 +103,15 @@ const DashboardContentWithSelection: React.FC<DashboardContentWithSelectionProps
           selectionMode={selectionMode}
         />
       </div>
+
+      <MoveFilesModal 
+        isOpen={moveModalOpen}
+        onClose={() => setMoveModalOpen(false)}
+        selectedFiles={selectedFiles}
+        files={files}
+        currentFolderId={currentFolderId}
+        onSuccess={refreshFiles}
+      />
     </div>
   );
 };

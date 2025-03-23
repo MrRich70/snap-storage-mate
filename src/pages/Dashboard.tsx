@@ -59,11 +59,14 @@ const Dashboard: React.FC = () => {
     selectionMode,
     setSelectionMode,
     selectedFiles,
+    moveModalOpen,
+    setMoveModalOpen,
     handleSelectFile,
     handleSelectAll,
     handleDeselectAll,
     handleDeleteSelected,
     handleDownloadSelected,
+    handleMoveSelected,
     resetSelection
   } = useFileSelection(files, currentFolderId, () => setRefreshTrigger(prev => prev + 1));
   
@@ -344,6 +347,11 @@ const Dashboard: React.FC = () => {
           onDeselectAll={handleDeselectAll}
           onDeleteSelected={handleDeleteSelected}
           onDownloadSelected={handleDownloadSelected}
+          onMoveSelected={handleMoveSelected}
+          moveModalOpen={moveModalOpen}
+          setMoveModalOpen={setMoveModalOpen}
+          currentFolderId={currentFolderId}
+          refreshFiles={() => setRefreshTrigger(prev => prev + 1)}
         />
       </main>
       

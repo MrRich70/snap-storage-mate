@@ -22,6 +22,11 @@ interface DashboardContentProps {
   onDeselectAll: () => void;
   onDeleteSelected: () => void;
   onDownloadSelected: () => void;
+  onMoveSelected: () => void;
+  moveModalOpen: boolean;
+  setMoveModalOpen: (open: boolean) => void;
+  currentFolderId: string;
+  refreshFiles: () => void;
 }
 
 const DashboardContent: React.FC<DashboardContentProps> = (props) => {

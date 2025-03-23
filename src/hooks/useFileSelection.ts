@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 export const useFileSelection = (files: ImageFile[], currentFolderId: string, refreshFiles: () => void) => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [moveModalOpen, setMoveModalOpen] = useState(false);
 
   // Clear selection when files change (e.g., navigating folders)
   const resetSelection = useCallback(() => {
@@ -77,15 +78,23 @@ export const useFileSelection = (files: ImageFile[], currentFolderId: string, re
     }
   }, [selectedFiles, files]);
 
+  const handleMoveSelected = useCallback(() => {
+    if (selectedFiles.length === 0) return;
+    setMoveModalOpen(true);
+  }, [selectedFiles]);
+
   return {
     selectionMode,
     setSelectionMode,
     selectedFiles,
+    moveModalOpen,
+    setMoveModalOpen,
     handleSelectFile,
     handleSelectAll,
     handleDeselectAll,
     handleDeleteSelected,
     handleDownloadSelected,
+    handleMoveSelected,
     resetSelection
   };
 };
