@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { LockIcon } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 const AuthCallback = () => {
   const [password, setPassword] = useState('');
@@ -16,6 +18,9 @@ const AuthCallback = () => {
   const [isPasswordReset, setIsPasswordReset] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(true);
+  const [verificationStatus, setVerificationStatus] = useState<'success' | 'error' | null>(null);
+  const [verificationMessage, setVerificationMessage] = useState('');
+  
   const navigate = useNavigate();
   const location = useLocation();
   const { updatePassword } = useAuth();
@@ -40,16 +45,17 @@ const AuthCallback = () => {
           throw error;
         }
         
-        toast.success('Email verified successfully');
-        setTimeout(() => navigate('/dashboard'), 1000);
-      } catch (error) {
+        // Successfully verified email
+        setVerificationStatus('success');
+        setVerificationMessage('Your email has been successfully verified! You can now log in.');
+        setTimeout(() => navigate('/'), 5000); // Redirect to login page after 5 seconds
+      } catch (error: any) {
         console.error('Error handling auth callback:', error);
-        toast.error('Failed to verify email. Please try again.');
-        setTimeout(() => navigate('/'), 2000);
+        setVerificationStatus('error');
+        setVerificationMessage('Failed to verify your email. Please try again or contact support.');
+        setTimeout(() => navigate('/'), 5000); // Redirect to login page after 5 seconds
       } finally {
-        if (!isPasswordReset) {
-          setIsProcessing(false);
-        }
+        setIsProcessing(false);
       }
     };
     
@@ -77,7 +83,7 @@ const AuthCallback = () => {
       
       if (success) {
         toast.success('Password updated successfully');
-        setTimeout(() => navigate('/dashboard'), 1000);
+        setTimeout(() => navigate('/'), 1000); // Redirect to login page
       }
     } catch (error) {
       console.error('Error resetting password:', error);
@@ -94,6 +100,39 @@ const AuthCallback = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-lg">Processing your request...</p>
         </div>
+      </div>
+    );
+  }
+  
+  if (verificationStatus) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/30 p-4">
+        <Card className="w-full max-w-md mx-auto animate-zoom-in">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-2xl font-bold">
+              {verificationStatus === 'success' ? 'Email Verified' : 'Verification Failed'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Alert className={verificationStatus === 'success' ? "border-green-500 bg-green-50 dark:bg-green-950/20" : "border-red-500 bg-red-50 dark:bg-red-950/20"}>
+              {verificationStatus === 'success' ? (
+                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              )}
+              <AlertTitle className={verificationStatus === 'success' ? "text-green-800 dark:text-green-300" : "text-red-800 dark:text-red-300"}>
+                {verificationStatus === 'success' ? 'Success' : 'Error'}
+              </AlertTitle>
+              <AlertDescription className={verificationStatus === 'success' ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}>
+                {verificationMessage}
+              </AlertDescription>
+            </Alert>
+            <div className="mt-6 text-center">
+              <p className="text-sm text-muted-foreground mb-4">You will be redirected to the login page in a few seconds.</p>
+              <Button onClick={() => navigate('/')}>Login Now</Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
