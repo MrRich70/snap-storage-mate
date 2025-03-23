@@ -6,6 +6,7 @@ import LoginForm from './auth/LoginForm';
 import SignupForm from './auth/SignupForm';
 import ForgotPasswordForm from './auth/ForgotPasswordForm';
 import FormFooter from './auth/FormFooter';
+import { toast } from 'sonner';
 
 type AuthMode = 'login' | 'signup' | 'forgot-password';
 
@@ -42,16 +43,21 @@ const AuthForm: React.FC = () => {
     
     try {
       if (mode === 'login') {
-        console.log('Attempting login with:', { email, accessCode: accessCode });
+        console.log('Attempting login with:', { email, accessCode });
         success = await login(email, password, accessCode);
       } else if (mode === 'signup') {
         if (!name.trim()) {
-          throw new Error('Name is required');
+          setLoginError('Name is required');
+          setIsSubmitting(false);
+          return;
         }
+        
+        console.log('Attempting signup with:', { name, email, accessCode });
         success = await signup(name, email, password, accessCode);
       } else if (mode === 'forgot-password') {
         success = await resetPassword(email);
         if (success) {
+          toast.success('Password reset email sent. Please check your inbox.');
           setTimeout(() => toggleMode('login'), 2000);
         }
       }
@@ -62,9 +68,11 @@ const AuthForm: React.FC = () => {
       setIsSubmitting(false);
     }
     
-    if (!success) {
+    if (!success && mode !== 'forgot-password') {
       setPassword('');
-      setLoginError('Login failed. Please check your email, password, and access code.');
+      if (!loginError) {
+        setLoginError('Authentication failed. Please check your credentials and access code.');
+      }
     }
   };
   

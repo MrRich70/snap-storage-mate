@@ -60,6 +60,8 @@ export const signupWithPassword = async (
   accessCode: string
 ): Promise<boolean> => {
   try {
+    console.log('Signup attempt:', { name, email, accessCodeValid: isValidAccessCode(accessCode) });
+    
     // Validate access code
     if (!accessCode) {
       toast.error('Access code is required');
@@ -72,6 +74,7 @@ export const signupWithPassword = async (
       return false;
     }
 
+    // First, sign up the user
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -85,12 +88,12 @@ export const signupWithPassword = async (
     });
     
     if (error) {
+      console.error('Signup error:', error.message);
       toast.error(error.message);
       return false;
     }
     
     if (data.user) {
-      // Auto-login after signup - even without email verification
       toast.success('Account created successfully! Please check your email to verify your account.');
       
       // Login the user right after signup
