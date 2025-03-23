@@ -3,3 +3,4 @@
 export * from './storageTypes';
 export * from './folderOperations';
 export * from './fileOperations';
+export * from './uploadUtils';
