@@ -1,7 +1,7 @@
 
 import React from 'react';
 import DashboardContentWithSelection from './DashboardContentWithSelection';
-import { Folder, ImageFile } from '@/utils/storage';
+import { Folder, ImageFile } from '@/utils/storageTypes';
 
 interface DashboardContentProps {
   isLoading: boolean;
