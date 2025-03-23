@@ -1,3 +1,4 @@
+
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -96,6 +97,7 @@ export const signupWithPassword = async (
           name,
           accessCode
         },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       }
     });
     
@@ -105,7 +107,7 @@ export const signupWithPassword = async (
     }
     
     if (data.user) {
-      // Auto-login after signup since we're not requiring verification
+      // Auto-login after signup without requiring email verification
       const { error: loginError } = await supabase.auth.signInWithPassword({
         email,
         password
