@@ -31,7 +31,8 @@ export const getAllUsers = async (): Promise<AuthUser[]> => {
           email: user.email || '',
           name: user.raw_user_meta_data?.name || user.raw_app_meta_data?.name || '',
           accessCode: user.raw_user_meta_data?.accessCode || '',
-          isAdmin: user.raw_user_meta_data?.accessCode?.toLowerCase() === 'njoyadmin'
+          isAdmin: user.raw_user_meta_data?.accessCode?.toLowerCase() === 'njoyadmin',
+          emailConfirmed: !!user.raw_app_meta_data?.email_confirmed_at || false
         };
       });
       return authUsers;
