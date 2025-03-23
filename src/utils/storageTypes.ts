@@ -3,8 +3,9 @@
 export interface Folder {
   id: string;
   name: string;
-  createdAt: string;
   parentId: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ImageFile {

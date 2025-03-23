@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Folder, ImageFile, getFolders, moveFile } from '@/utils/storage';
+import { Folder, ImageFile, getFolders, moveFiles } from '@/utils/storage';
 import { FolderIcon, ArrowRightIcon, CheckIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -49,7 +49,7 @@ const MoveFilesModal: React.FC<MoveFilesModalProps> = ({
       
       // Process files one by one to ensure all files get moved
       for (const file of filesToMove) {
-        await moveFile(file.id, currentFolderId, selectedFolderId);
+        await moveFiles([file.id], currentFolderId, selectedFolderId);
       }
       
       toast.success(`${selectedFiles.length} files moved successfully`);

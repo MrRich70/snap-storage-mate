@@ -1,4 +1,3 @@
-
 import { ImageFile } from './storageTypes';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -33,6 +32,7 @@ export const uploadFile = async (file: File, folderId: string, isSharedStorage =
       size: file.size,
       url: url,
       thumbnailUrl: thumbnailUrl,
+      folderId: folderId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -145,3 +145,6 @@ export const moveFiles = async (fileIds: string[], sourceFolderId: string, targe
     return false;
   }
 };
+
+// Export the moveFiles function as moveFile as well for backward compatibility
+export const moveFile = moveFiles;
