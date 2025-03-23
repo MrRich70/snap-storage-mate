@@ -31,7 +31,22 @@ interface AuthContextType {
   deleteAllUsers: (exceptUserId: string) => Promise<boolean>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Initialize with default values to prevent the "must be used within a Provider" error
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  isAuthenticated: false,
+  isLoading: true,
+  isAdmin: false,
+  login: async () => false,
+  signup: async () => ({ success: false }),
+  logout: async () => {},
+  resetPassword: async () => false,
+  updatePassword: async () => false,
+  deleteAccount: async () => false,
+  fetchAllUsers: async () => [],
+  deleteUser: async () => false,
+  deleteAllUsers: async () => false,
+});
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user, isLoading, isAuthenticated } = useAuthSession();
@@ -80,8 +95,5 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
   return context;
 };

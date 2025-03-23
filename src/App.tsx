@@ -16,8 +16,8 @@ import AdminPage from "./pages/Admin";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <BrowserRouter>
-    <QueryClientProvider client={queryClient}>
+  <QueryClientProvider client={queryClient}>
+    <BrowserRouter>
       <TooltipProvider>
         <AuthProvider>
           <Toaster />
@@ -40,8 +40,8 @@ const App = () => (
           </Routes>
         </AuthProvider>
       </TooltipProvider>
-    </QueryClientProvider>
-  </BrowserRouter>
+    </BrowserRouter>
+  </QueryClientProvider>
 );
 
 export default App;
