@@ -23,11 +23,13 @@ const AuthCallback = () => {
       // Check URL parameters and hash for type
       const searchParams = new URLSearchParams(location.search);
       const type = searchParams.get('type');
+      const token = searchParams.get('token');
       
       // Also check the URL hash for recovery tokens
       // This is crucial for password reset links which use hash-based tokens
       const hash = location.hash;
       const isRecovery = hash.includes('type=recovery') || type === 'recovery';
+      const isSignup = type === 'signup';
       
       try {
         if (isRecovery) {
@@ -38,16 +40,41 @@ const AuthCallback = () => {
           return;
         }
         
-        // Handle email verification
+        // Handle token from email verification link if present
+        if (token && isSignup) {
+          console.log('Processing email verification');
+          // Let's improve token handling
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: 'email',
+          });
+          
+          if (error) {
+            console.error('Email verification error:', error);
+            throw error;
+          }
+          
+          // Successfully verified email
+          setVerificationStatus('success');
+          setVerificationMessage('Your email has been successfully verified! You can now log in to your account.');
+          
+          // Delay redirecting to give time to read the message
+          setTimeout(() => {
+            navigate('/');
+          }, 3000);
+          return;
+        }
+        
+        // Handle general auth callback (like after auth.signIn with email verification)
         const { error } = await supabase.auth.getSession();
         
         if (error) {
           throw error;
         }
         
-        // Successfully verified email
+        // Default success case
         setVerificationStatus('success');
-        setVerificationMessage('Your email has been successfully verified!');
+        setVerificationMessage('Authentication successful!');
         
         // Delay redirecting to give time to read the message
         setTimeout(() => {
@@ -60,7 +87,7 @@ const AuthCallback = () => {
       } catch (error: any) {
         console.error('Error handling auth callback:', error);
         setVerificationStatus('error');
-        setVerificationMessage('Failed to verify your email. Please try again or contact support.');
+        setVerificationMessage('Authentication failed. Please try again or contact support.');
         
         // Delay redirecting to give time to read the error
         setTimeout(() => {

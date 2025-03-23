@@ -90,6 +90,7 @@ export const signupWithPassword = async (
     }
 
     // Sign up the user with email confirmation enabled
+    // Ensure the redirect URL points to the auth callback route specifically
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
