@@ -5,16 +5,22 @@ import { RefreshCcw, Trash2, MailCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { AuthUser } from '@/lib/auth/types';
 
 interface AdminHeaderProps {
   loadUsers: () => Promise<void>;
   handleDeleteAllUsers: () => void;
+  users: AuthUser[];
 }
 
-const AdminHeader: React.FC<AdminHeaderProps> = ({ loadUsers, handleDeleteAllUsers }) => {
+const AdminHeader: React.FC<AdminHeaderProps> = ({ loadUsers, handleDeleteAllUsers, users }) => {
   const { confirmEmail } = useAuth();
   const [confirmEmailInput, setConfirmEmailInput] = useState('');
   const [isConfirmingEmail, setIsConfirmingEmail] = useState(false);
+  
+  // Find unconfirmed emails
+  const unconfirmedEmails = users.filter(user => !user.emailConfirmed)
+    .map(user => user.email);
 
   const handleRefresh = () => {
     loadUsers();
@@ -42,6 +48,10 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ loadUsers, handleDeleteAllUse
     } finally {
       setIsConfirmingEmail(false);
     }
+  };
+
+  const selectUnconfirmedEmail = (email: string) => {
+    setConfirmEmailInput(email);
   };
 
   return (
@@ -88,6 +98,25 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ loadUsers, handleDeleteAllUse
             Confirm Email
           </Button>
         </div>
+        
+        {unconfirmedEmails.length > 0 && (
+          <div className="mt-4">
+            <h3 className="text-sm font-semibold mb-2">Pending Email Confirmations:</h3>
+            <div className="flex flex-wrap gap-2">
+              {unconfirmedEmails.map(email => (
+                <Button 
+                  key={email} 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => selectUnconfirmedEmail(email)}
+                  className="text-xs"
+                >
+                  {email}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

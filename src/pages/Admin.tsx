@@ -49,7 +49,8 @@ const AdminPage: React.FC = () => {
       <main className="container py-8">
         <AdminHeader 
           loadUsers={loadUsers} 
-          handleDeleteAllUsers={handleDeleteAllUsers} 
+          handleDeleteAllUsers={handleDeleteAllUsers}
+          users={users}
         />
         
         <UserTable 
