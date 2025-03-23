@@ -9,6 +9,8 @@ export const loginWithPassword = async (
   accessCode: string
 ): Promise<boolean> => {
   try {
+    console.log('Login attempt:', { email, accessCodeValid: isValidAccessCode(accessCode) });
+    
     // Validate access code
     if (!accessCode) {
       toast.error('Access code is required');
@@ -27,6 +29,7 @@ export const loginWithPassword = async (
     });
     
     if (error) {
+      console.error('Supabase login error:', error.message);
       toast.error(error.message);
       return false;
     }

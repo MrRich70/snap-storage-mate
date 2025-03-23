@@ -16,6 +16,7 @@ const AuthForm: React.FC = () => {
   const [password, setPassword] = useState('');
   const [accessCode, setAccessCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   
   const { login, signup, resetPassword } = useAuth();
   
@@ -23,6 +24,7 @@ const AuthForm: React.FC = () => {
     setMode(newMode);
     setName('');
     setPassword('');
+    setLoginError(null);
     if (newMode !== 'forgot-password') {
       setEmail('');
     }
@@ -35,10 +37,12 @@ const AuthForm: React.FC = () => {
     if (isSubmitting) return;
     
     setIsSubmitting(true);
+    setLoginError(null);
     let success = false;
     
     try {
       if (mode === 'login') {
+        console.log('Attempting login with:', { email, accessCode: accessCode });
         success = await login(email, password, accessCode);
       } else if (mode === 'signup') {
         if (!name.trim()) {
@@ -53,12 +57,14 @@ const AuthForm: React.FC = () => {
       }
     } catch (error) {
       console.error('Auth error:', error);
+      setLoginError(error instanceof Error ? error.message : 'Authentication failed');
     } finally {
       setIsSubmitting(false);
     }
     
     if (!success) {
       setPassword('');
+      setLoginError('Login failed. Please check your email, password, and access code.');
     }
   };
   
@@ -82,6 +88,12 @@ const AuthForm: React.FC = () => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {loginError && (
+            <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-md text-sm">
+              {loginError}
+            </div>
+          )}
+          
           {mode === 'signup' && (
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
