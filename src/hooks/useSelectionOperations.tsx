@@ -1,17 +1,19 @@
 
-import { useState, useCallback, useEffect } from 'react';
-import { ImageFile, downloadFile, deleteFile } from '@/utils/storage';
+import { useState, useCallback } from 'react';
+import { ImageFile, deleteFile, downloadFile, moveFiles } from '@/utils/storage';
 import { toast } from 'sonner';
 
-export const useFileSelection = (files: ImageFile[], currentFolderId: string, refreshFiles: () => void) => {
-  const [selectionMode, setSelectionMode] = useState(false);
+export const useSelectionOperations = (
+  files: ImageFile[], 
+  currentFolderId: string,
+  setRefreshTrigger: (value: (prev: number) => number) => void
+) => {
+  const [selectionMode, setSelectionMode] = useState<boolean>(false);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
-  const [moveModalOpen, setMoveModalOpen] = useState(false);
-
-  // Reset selection when folder changes instead of when files change
-  useEffect(() => {
-    resetSelection();
-  }, [currentFolderId]);
+  const [moveModalOpen, setMoveModalOpen] = useState<boolean>(false);
+  
+  // Shared storage flag
+  const SHARED_STORAGE = true;
 
   const resetSelection = useCallback(() => {
     setSelectedFiles([]);
@@ -46,7 +48,7 @@ export const useFileSelection = (files: ImageFile[], currentFolderId: string, re
     try {
       // Collect all delete promises
       const deletePromises = selectedFiles.map(fileId => 
-        deleteFile(fileId, currentFolderId)
+        deleteFile(fileId, currentFolderId, SHARED_STORAGE)
       );
       
       // Wait for all files to be deleted
@@ -54,12 +56,12 @@ export const useFileSelection = (files: ImageFile[], currentFolderId: string, re
       
       toast.success(`${selectedFiles.length} files deleted successfully`);
       setSelectedFiles([]);
-      refreshFiles();
+      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       console.error('Error deleting selected files:', error);
       toast.error('Failed to delete some files');
     }
-  }, [selectedFiles, currentFolderId, refreshFiles]);
+  }, [selectedFiles, currentFolderId, setRefreshTrigger]);
 
   const handleDownloadSelected = useCallback(() => {
     if (selectedFiles.length === 0) return;
@@ -93,12 +95,12 @@ export const useFileSelection = (files: ImageFile[], currentFolderId: string, re
     selectedFiles,
     moveModalOpen,
     setMoveModalOpen,
+    resetSelection,
     handleSelectFile,
     handleSelectAll,
     handleDeselectAll,
     handleDeleteSelected,
     handleDownloadSelected,
-    handleMoveSelected,
-    resetSelection
+    handleMoveSelected
   };
 };
