@@ -22,9 +22,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { UserX, Trash2, UserCog, Users } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import { UserX, Trash2, Users, RefreshCw } from 'lucide-react';
 import { AuthUser } from '@/lib/auth-utils';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 const AdminPage: React.FC = () => {
   const { user, isAuthenticated, isAdmin, fetchAllUsers, deleteUser, deleteAllUsers } = useAuth();
@@ -100,15 +102,26 @@ const AdminPage: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
           
-          <Button 
-            variant="destructive" 
-            onClick={handleDeleteAllUsers}
-            className="flex items-center gap-2"
-          >
-            <Users className="h-4 w-4" />
-            <Trash2 className="h-4 w-4" />
-            Delete All Users
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={loadUsers}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
+            
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteAllUsers}
+              className="flex items-center gap-2"
+            >
+              <Users className="h-4 w-4" />
+              <Trash2 className="h-4 w-4" />
+              Delete All Users
+            </Button>
+          </div>
         </div>
         
         {loading ? (
@@ -123,7 +136,7 @@ const AdminPage: React.FC = () => {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Access Code</TableHead>
-                  <TableHead>Admin</TableHead>
+                  <TableHead>Role</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -140,7 +153,13 @@ const AdminPage: React.FC = () => {
                       <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>{user.accessCode || 'N/A'}</TableCell>
-                      <TableCell>{user.isAdmin ? 'Yes' : 'No'}</TableCell>
+                      <TableCell>
+                        {user.isAdmin ? (
+                          <Badge variant="default" className="bg-purple-500">Admin</Badge>
+                        ) : (
+                          <Badge variant="outline">User</Badge>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="destructive"

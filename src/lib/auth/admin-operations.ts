@@ -5,16 +5,7 @@ import { AuthUser } from './types';
 
 export const getAllUsers = async (): Promise<AuthUser[]> => {
   try {
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('*');
-    
-    if (profileError) {
-      toast.error(`Failed to fetch users: ${profileError.message}`);
-      return [];
-    }
-    
-    // Get the session to access authentication data
+    // First, check if the current user is an admin
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user || !user.email) {
@@ -31,20 +22,43 @@ export const getAllUsers = async (): Promise<AuthUser[]> => {
       return [];
     }
     
-    // Map the profiles to AuthUser objects
-    const users: AuthUser[] = profileData ? profileData.map(profile => {
-      // For each profile, extract the data we need
+    // Get all auth users (admin only function that uses the RPC method)
+    const { data: authUsers, error: authError } = await supabase.rpc('get_all_users');
+    
+    if (authError) {
+      console.error('Error fetching auth users:', authError);
+      toast.error(`Failed to fetch users: ${authError.message}`);
+      return [];
+    }
+    
+    // Get all profiles to merge with auth data
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('*');
+    
+    if (profileError) {
+      console.error('Error fetching profiles:', profileError);
+      toast.error(`Failed to fetch user profiles: ${profileError.message}`);
+      return [];
+    }
+    
+    // Map and merge auth users with profile data
+    const users: AuthUser[] = authUsers ? authUsers.map(authUser => {
+      // Find matching profile
+      const profile = profileData?.find(p => p.id === authUser.id) || {};
+      
+      // Determine if user is admin
+      const userAccessCode = authUser.raw_user_meta_data?.accessCode || '';
+      const isAdmin = userAccessCode.toLowerCase() === 'njoyadmin';
+      
       return {
-        id: profile.id,
-        name: profile.name || '',
-        email: '', // We'll populate this later if possible
-        accessCode: '', // We'll try to get this from metadata
-        isAdmin: false // Default to false
+        id: authUser.id,
+        name: profile.name || authUser.raw_user_meta_data?.name || '',
+        email: authUser.email || '',
+        accessCode: authUser.raw_user_meta_data?.accessCode || '',
+        isAdmin
       };
     }) : [];
-    
-    // For a real admin view, we would ideally have an admin API that provides more user details
-    // This is a simplified version that works with the available data
     
     return users;
   } catch (error) {
