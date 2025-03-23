@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -47,7 +48,7 @@ const Navigation: React.FC<NavigationProps> = ({ onUpload }) => {
 
   return (
     <>
-      <header="w-full border-b bg-background/80 backdrop-blur-md sticky top-0 z-40">
+      <header className="w-full border-b bg-background/80 backdrop-blur-md sticky top-0 z-40">
         <div className="container flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2 text-xl font-bold">
             <ImageIcon className="h-5 w-5" />
