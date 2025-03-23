@@ -54,6 +54,11 @@ const AuthForm: React.FC = () => {
         
         console.log('Attempting signup with:', { name, email, accessCode });
         success = await signup(name, email, password, accessCode);
+        if (success) {
+          // If signup is successful, suggest user to login
+          toast.info('Please check your email and then log in with your credentials');
+          setTimeout(() => toggleMode('login'), 3000);
+        }
       } else if (mode === 'forgot-password') {
         success = await resetPassword(email);
         if (success) {
