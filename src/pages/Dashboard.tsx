@@ -1,11 +1,12 @@
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { useDropbox } from '@/hooks/useDropbox';
 import { 
-  ChevronLeftIcon, 
-  FolderPlusIcon, 
-  ImageIcon, 
-  XIcon,
+  FolderIcon, 
+  UploadIcon, 
+  FolderPlusIcon,
+  ArrowLeftIcon,
   Loader2Icon 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,27 +14,12 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import Navigation from '@/components/Navigation';
 import FolderGrid from '@/components/FolderGrid';
 import ImageGrid from '@/components/ImageGrid';
-import Modal from '@/components/Modal';
-import { useAuth } from '@/context/AuthContext';
-import { 
-  Folder, 
-  ImageFile, 
-  getFolders, 
-  getFiles,
-  getFolder,
-  createFolder,
-  renameFolder,
-  deleteFolder,
-  uploadFile,
-  renameFile,
-  deleteFile,
-  downloadFile,
-  initializeStorage
-} from '@/utils/storage';
+import DropboxConnect from '@/components/DropboxConnect';
 import { toast } from 'sonner';
 
 const Dashboard: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isConnected: isDropboxConnected } = useDropbox();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -45,7 +31,6 @@ const Dashboard: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<ImageFile | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
   
-  // Modal states
   const [newFolderModalOpen, setNewFolderModalOpen] = useState<boolean>(false);
   const [renameFolderModalOpen, setRenameFolderModalOpen] = useState<boolean>(false);
   const [renameFileModalOpen, setRenameFileModalOpen] = useState<boolean>(false);
@@ -54,14 +39,14 @@ const Dashboard: React.FC = () => {
   const [viewFileModalOpen, setViewFileModalOpen] = useState<boolean>(false);
   const [uploadingFile, setUploadingFile] = useState<boolean>(false);
   
-  // Check authentication
+  const [showDropboxDialog, setShowDropboxDialog] = useState(false);
+  
   useEffect(() => {
     if (!isAuthenticated && !isLoading) {
       navigate('/');
     }
   }, [isAuthenticated, navigate, isLoading]);
   
-  // Initialize storage and load folders/files
   useEffect(() => {
     initializeStorage();
     loadCurrentFolder('root');
@@ -71,24 +56,19 @@ const Dashboard: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // Get folders in current directory
       const allFolders = getFolders();
       const folderChildren = allFolders.filter(folder => folder.parentId === folderId);
       setFolders(folderChildren);
       
-      // Get files in current directory
       const folderFiles = getFiles(folderId);
       setFiles(folderFiles);
       
-      // Update current folder
       setCurrentFolderId(folderId);
       
-      // Update breadcrumb path
       if (folderId === 'root') {
         const rootFolder = allFolders.find(f => f.id === 'root');
         setCurrentPath(rootFolder ? [rootFolder] : []);
       } else {
-        // Build path from current folder to root
         const pathItems: Folder[] = [];
         let currentId: string | null = folderId;
         
@@ -112,17 +92,20 @@ const Dashboard: React.FC = () => {
     }
   };
   
-  // Handler for folder clicks (navigation)
+  useEffect(() => {
+    if (isAuthenticated && !isDropboxConnected && !authLoading) {
+      setShowDropboxDialog(true);
+    }
+  }, [isAuthenticated, isDropboxConnected, authLoading]);
+  
   const handleFolderClick = (folder: Folder) => {
     loadCurrentFolder(folder.id);
   };
   
-  // Handler for breadcrumb navigation
   const handleBreadcrumbClick = (folder: Folder) => {
     loadCurrentFolder(folder.id);
   };
   
-  // Create folder handlers
   const handleCreateFolderClick = () => {
     setNewFolderModalOpen(true);
   };
@@ -132,7 +115,6 @@ const Dashboard: React.FC = () => {
     loadCurrentFolder(currentFolderId);
   };
   
-  // Rename folder handlers
   const handleRenameFolderClick = (folder: Folder) => {
     setSelectedFolder(folder);
     setRenameFolderModalOpen(true);
@@ -145,7 +127,6 @@ const Dashboard: React.FC = () => {
     }
   };
   
-  // Delete folder handlers
   const handleDeleteFolderClick = (folder: Folder) => {
     setSelectedFolder(folder);
     setDeleteFolderModalOpen(true);
@@ -158,7 +139,6 @@ const Dashboard: React.FC = () => {
     }
   };
   
-  // Upload file handlers
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
@@ -175,19 +155,16 @@ const Dashboard: React.FC = () => {
         await uploadFile(file, currentFolderId);
       }
       
-      // Reload current folder contents
       loadCurrentFolder(currentFolderId);
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Failed to upload file(s)');
     } finally {
       setUploadingFile(false);
-      // Reset file input
       e.target.value = '';
     }
   };
   
-  // Rename file handlers
   const handleRenameFileClick = (file: ImageFile) => {
     setSelectedFile(file);
     setRenameFileModalOpen(true);
@@ -200,7 +177,6 @@ const Dashboard: React.FC = () => {
     }
   };
   
-  // Delete file handlers
   const handleDeleteFileClick = (file: ImageFile) => {
     setSelectedFile(file);
     setDeleteFileModalOpen(true);
@@ -213,23 +189,39 @@ const Dashboard: React.FC = () => {
     }
   };
   
-  // Download file handler
   const handleDownloadFile = (file: ImageFile) => {
     downloadFile(file);
   };
   
-  // View file handler
   const handleViewFile = (file: ImageFile) => {
     setSelectedFile(file);
     setViewFileModalOpen(true);
   };
   
+  if (authLoading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <Loader2Icon className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    navigate('/');
+    return null;
+  }
+
   return (
-    <div className="min-h-screen flex flex-col overflow-x-hidden">
-      <Navigation onUpload={handleUploadClick} />
+    <div className="flex h-screen flex-col bg-background">
+      <Navigation />
       
-      <main className="flex-1 container mx-auto px-4 py-6 max-w-7xl">
-        {/* Breadcrumbs and actions */}
+      <main className="flex-1 overflow-auto p-6">
+        {!isDropboxConnected && (
+          <div className="mb-6">
+            <DropboxConnect />
+          </div>
+        )}
+        
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center overflow-x-auto no-scrollbar">
             {currentPath.length > 1 && (
@@ -242,7 +234,7 @@ const Dashboard: React.FC = () => {
                   loadCurrentFolder(parentFolder.id);
                 }}
               >
-                <ChevronLeftIcon className="h-4 w-4" />
+                <ArrowLeftIcon className="h-4 w-4" />
               </Button>
             )}
             
@@ -289,7 +281,7 @@ const Dashboard: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <ImageIcon className="h-4 w-4 mr-2" />
+                  <UploadIcon className="h-4 w-4 mr-2" />
                   <span>Upload Images</span>
                 </>
               )}
@@ -315,7 +307,6 @@ const Dashboard: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-8">
-            {/* Folders section */}
             {folders.length > 0 && (
               <div>
                 <h2 className="text-lg font-medium mb-4">Folders</h2>
@@ -328,7 +319,6 @@ const Dashboard: React.FC = () => {
               </div>
             )}
             
-            {/* Files section */}
             <div>
               <h2 className="text-lg font-medium mb-4">Images</h2>
               <ImageGrid
@@ -343,7 +333,6 @@ const Dashboard: React.FC = () => {
         )}
       </main>
       
-      {/* Create folder modal */}
       <Modal
         title="Create New Folder"
         isOpen={newFolderModalOpen}
@@ -353,7 +342,6 @@ const Dashboard: React.FC = () => {
         confirmText="Create"
       />
       
-      {/* Rename folder modal */}
       <Modal
         title="Rename Folder"
         isOpen={renameFolderModalOpen}
@@ -364,7 +352,6 @@ const Dashboard: React.FC = () => {
         confirmText="Rename"
       />
       
-      {/* Delete folder modal */}
       <Modal
         title="Delete Folder"
         isOpen={deleteFolderModalOpen}
@@ -378,7 +365,6 @@ const Dashboard: React.FC = () => {
         <p className="text-sm text-destructive mt-2">This action cannot be undone.</p>
       </Modal>
       
-      {/* Rename file modal */}
       <Modal
         title="Rename File"
         isOpen={renameFileModalOpen}
@@ -389,7 +375,6 @@ const Dashboard: React.FC = () => {
         confirmText="Rename"
       />
       
-      {/* Delete file modal */}
       <Modal
         title="Delete File"
         isOpen={deleteFileModalOpen}
@@ -403,7 +388,6 @@ const Dashboard: React.FC = () => {
         <p className="text-sm text-destructive mt-2">This action cannot be undone.</p>
       </Modal>
       
-      {/* View file modal */}
       <Dialog 
         open={viewFileModalOpen} 
         onOpenChange={(open) => !open && setViewFileModalOpen(false)}
@@ -439,6 +423,18 @@ const Dashboard: React.FC = () => {
               </p>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={showDropboxDialog} onOpenChange={setShowDropboxDialog}>
+        <DialogContent className="max-w-md">
+          <div className="space-y-4 p-2">
+            <h2 className="text-xl font-bold">Connect to Dropbox</h2>
+            <p className="text-muted-foreground">
+              Connect your account to Dropbox to store and organize your images in the cloud.
+            </p>
+            <DropboxConnect />
+          </div>
         </DialogContent>
       </Dialog>
     </div>
