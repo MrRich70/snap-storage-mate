@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/context/AuthContext';
@@ -118,8 +119,6 @@ const AuthForm: React.FC = () => {
         
         {mode === 'signup' && (
           <SignupForm
-            name={name}
-            setName={setName}
             email={email}
             setEmail={setEmail}
             password={password}
