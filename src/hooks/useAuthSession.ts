@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { AuthUser, mapUserToAuthUser } from '@/lib/auth-utils';
+import { AuthUser, mapUserToAuthUser } from '@/lib/auth/types';
 
 interface UseAuthSessionResult {
   user: AuthUser | null;

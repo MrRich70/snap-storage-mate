@@ -12,7 +12,7 @@ import {
   getAllUsers,
   adminDeleteUser,
   adminDeleteAllUsers
-} from '@/lib/auth-utils';
+} from '@/lib/auth';
 
 interface AuthContextType {
   user: AuthUser | null;
