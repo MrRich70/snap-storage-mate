@@ -1,6 +1,8 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AuthUser, isValidAccessCode } from './types';
+import { confirmUserEmail } from './admin-operations';
 
 export const loginWithPassword = async (
   email: string, 
@@ -29,8 +31,21 @@ export const loginWithPassword = async (
     
     if (error) {
       console.error('Supabase login error:', error.message);
-      toast.error(error.message);
-      return false;
+      
+      // If the error is about unconfirmed email, try to auto-confirm it
+      if (error.message.includes('Email not confirmed')) {
+        const confirmed = await confirmUserEmail(email);
+        if (confirmed) {
+          toast.success('Email confirmed automatically. Please try logging in again.');
+          return false;
+        } else {
+          toast.error(error.message);
+          return false;
+        }
+      } else {
+        toast.error(error.message);
+        return false;
+      }
     }
     
     if (data.user) {
@@ -111,6 +126,9 @@ export const signupWithPassword = async (
       if (data.user.identities && data.user.identities.length === 0) {
         return { success: false, error: 'This email is already registered. Please log in instead.' };
       }
+      
+      // Auto confirm the user's email
+      await confirmUserEmail(email);
       
       return { success: true };
     } else {
