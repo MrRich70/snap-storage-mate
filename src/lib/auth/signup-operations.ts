@@ -4,7 +4,7 @@ import { isValidAccessCode } from './types';
 import { confirmUserEmail } from './admin-operations';
 
 /**
- * Registers a new user with their name, email, password and access code
+ * Registers a new user with their email, password and access code
  */
 export const signupWithPassword = async (
   name: string, 
@@ -13,12 +13,7 @@ export const signupWithPassword = async (
   accessCode: string
 ): Promise<{ success: boolean; error?: string }> => {
   try {
-    console.log('Signup attempt:', { name, email, accessCodeValid: isValidAccessCode(accessCode) });
-    
-    // Validate input parameters
-    if (!name.trim()) {
-      return { success: false, error: 'Name is required' };
-    }
+    console.log('Signup attempt:', { email, accessCodeValid: isValidAccessCode(accessCode) });
     
     if (!email.trim()) {
       return { success: false, error: 'Email is required' };
@@ -42,14 +37,16 @@ export const signupWithPassword = async (
       return { success: false, error: 'Invalid access code' };
     }
 
+    // Default name to email username if not provided
+    const defaultName = name.trim() || email.split('@')[0];
+
     // Sign up the user with email confirmation enabled
-    // Ensure the redirect URL points to the auth callback route specifically
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          name,
+          name: defaultName,
           accessCode
         },
         emailRedirectTo: `${window.location.origin}/auth/callback`,

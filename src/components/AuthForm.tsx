@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/context/AuthContext';
@@ -14,7 +13,6 @@ type AuthMode = 'login' | 'signup' | 'forgot-password';
 
 const AuthForm: React.FC = () => {
   const [mode, setMode] = useState<AuthMode>('login');
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [accessCode, setAccessCode] = useState('');
@@ -25,7 +23,6 @@ const AuthForm: React.FC = () => {
   
   const toggleMode = (newMode: AuthMode) => {
     setMode(newMode);
-    setName('');
     setPassword('');
     setLoginError(null);
     if (newMode !== 'forgot-password') {
@@ -52,8 +49,8 @@ const AuthForm: React.FC = () => {
           setLoginError('Login failed. Please check your credentials and access code.');
         }
       } else if (mode === 'signup') {
-        console.log('Attempting signup with:', { name, email, accessCode });
-        const { success, error } = await signup(name, email, password, accessCode);
+        console.log('Attempting signup with:', { email, accessCode });
+        const { success, error } = await signup('', email, password, accessCode);
         
         if (success) {
           toast.success('Account created successfully!');
@@ -153,4 +150,3 @@ const AuthForm: React.FC = () => {
 };
 
 export default AuthForm;
-

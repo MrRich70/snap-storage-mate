@@ -3,12 +3,10 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LockIcon, MailIcon, UserIcon, KeyIcon } from 'lucide-react';
+import { LockIcon, MailIcon, KeyIcon } from 'lucide-react';
 import FormError from './FormError';
 
 interface SignupFormProps {
-  name: string;
-  setName: (name: string) => void;
   email: string;
   setEmail: (email: string) => void;
   password: string;
@@ -21,8 +19,6 @@ interface SignupFormProps {
 }
 
 const SignupForm: React.FC<SignupFormProps> = ({
-  name,
-  setName,
   email,
   setEmail,
   password,
@@ -36,21 +32,6 @@ const SignupForm: React.FC<SignupFormProps> = ({
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <FormError error={error} />
-      
-      <div className="space-y-2">
-        <Label htmlFor="name">Full Name</Label>
-        <div className="relative">
-          <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            id="name"
-            placeholder="John Doe"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="pl-10"
-            required
-          />
-        </div>
-      </div>
       
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
