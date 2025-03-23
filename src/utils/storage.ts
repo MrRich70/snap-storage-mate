@@ -2,6 +2,7 @@
 import { nanoid } from 'nanoid';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { uploadFileToSupabase } from './uploadUtils';
 
 export interface Folder {
   id: string;
@@ -173,28 +174,16 @@ export const uploadFile = async (file: File, folderId: string): Promise<ImageFil
   const fileExt = file.name.split('.').pop();
   const fileId = nanoid();
   const fileName = file.name;
-  const filePath = `${folderId}/${fileName}`;
 
   try {
-    const { error: uploadError } = await supabase
-      .storage
-      .from('images')
-      .upload(filePath, file);
-      
-    if (uploadError) {
-      throw uploadError;
-    }
+    // Use the enhanced upload utility
+    const publicUrl = await uploadFileToSupabase(file, folderId);
     
-    const { data: publicUrl } = supabase
-      .storage
-      .from('images')
-      .getPublicUrl(filePath);
-      
     const newFile: ImageFile = {
       id: fileId,
       name: fileName,
-      url: publicUrl.publicUrl,
-      thumbnailUrl: publicUrl.publicUrl,
+      url: publicUrl,
+      thumbnailUrl: publicUrl,
       size: file.size,
       type: file.type,
       folderId,
@@ -202,7 +191,6 @@ export const uploadFile = async (file: File, folderId: string): Promise<ImageFil
       updatedAt: new Date().toISOString()
     };
     
-    toast.success(`File "${file.name}" uploaded`);
     return newFile;
   } catch (error) {
     console.error('Upload error:', error);

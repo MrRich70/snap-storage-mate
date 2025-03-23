@@ -31,6 +31,13 @@ import {
   downloadFile
 } from '@/utils/storage';
 import Modal from '@/components/Modal';
+import UploadProgress from '@/components/UploadProgress';
+import { 
+  getUploadProgress, 
+  retryUpload, 
+  cancelUpload, 
+  clearCompletedUploads 
+} from '@/utils/uploadUtils';
 
 const Dashboard: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -44,6 +51,7 @@ const Dashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedFile, setSelectedFile] = useState<ImageFile | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<any[]>([]);
   
   const [newFolderModalOpen, setNewFolderModalOpen] = useState<boolean>(false);
   const [renameFolderModalOpen, setRenameFolderModalOpen] = useState<boolean>(false);
@@ -52,6 +60,9 @@ const Dashboard: React.FC = () => {
   const [deleteFileModalOpen, setDeleteFileModalOpen] = useState<boolean>(false);
   const [viewFileModalOpen, setViewFileModalOpen] = useState<boolean>(false);
   const [uploadingFile, setUploadingFile] = useState<boolean>(false);
+  
+  // Store file reference for retry operations
+  const [fileCache, setFileCache] = useState<Map<string, File>>(new Map());
   
   useEffect(() => {
     if (!isAuthenticated && !authLoading) {
@@ -62,6 +73,15 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     initializeStorage();
     loadCurrentFolder('root');
+  }, []);
+  
+  // Update upload progress periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setUploadProgress(getUploadProgress());
+    }, 500);
+    
+    return () => clearInterval(interval);
   }, []);
   
   const loadCurrentFolder = async (folderId: string) => {
@@ -155,13 +175,30 @@ const Dashboard: React.FC = () => {
     
     setUploadingFile(true);
     
+    // Cache files for potential retry operations
+    const newFileCache = new Map(fileCache);
+    
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        await uploadFile(file, currentFolderId);
+        // Store file in cache using a unique key
+        const cacheKey = `${currentFolderId}_${file.name}_${Date.now()}`;
+        newFileCache.set(cacheKey, file);
+        
+        // Upload and process in background
+        uploadFile(file, currentFolderId)
+          .then(() => {
+            // Refresh the file list after all uploads
+            if (i === files.length - 1) {
+              loadCurrentFolder(currentFolderId);
+            }
+          })
+          .catch((error) => {
+            console.error('Upload error:', error);
+          });
       }
       
-      loadCurrentFolder(currentFolderId);
+      setFileCache(newFileCache);
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Failed to upload file(s)');
@@ -202,6 +239,35 @@ const Dashboard: React.FC = () => {
   const handleViewFile = (file: ImageFile) => {
     setSelectedFile(file);
     setViewFileModalOpen(true);
+  };
+  
+  const handleRetryUpload = async (uploadId: string) => {
+    // Find the file in our cache
+    for (const [cacheKey, cachedFile] of fileCache.entries()) {
+      if (cacheKey.includes(uploadId)) {
+        try {
+          await retryUpload(uploadId, cachedFile, currentFolderId);
+          loadCurrentFolder(currentFolderId);
+        } catch (error) {
+          console.error('Retry failed:', error);
+        }
+        return;
+      }
+    }
+    
+    toast.error('Original file not found for retry. Please upload again.');
+  };
+  
+  const handleCancelUpload = (uploadId: string) => {
+    cancelUpload(uploadId);
+    // Update the UI immediately
+    setUploadProgress(getUploadProgress());
+  };
+  
+  const handleClearCompletedUploads = () => {
+    clearCompletedUploads();
+    // Update the UI immediately
+    setUploadProgress(getUploadProgress());
   };
   
   if (authLoading) {
@@ -332,6 +398,14 @@ const Dashboard: React.FC = () => {
           </div>
         )}
       </main>
+      
+      {/* Upload Progress Component */}
+      <UploadProgress
+        uploads={uploadProgress}
+        onRetry={handleRetryUpload}
+        onCancel={handleCancelUpload}
+        onClearCompleted={handleClearCompletedUploads}
+      />
       
       <Modal
         title="Create New Folder"
