@@ -45,6 +45,16 @@ const Navigation: React.FC<NavigationProps> = ({ onUpload }) => {
             <span>Upload</span>
           </Button>
           
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleLogout}
+            className="flex items-center gap-1"
+          >
+            <LogOutIcon className="h-4 w-4" />
+            <span>Logout</span>
+          </Button>
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Avatar className="h-8 w-8 cursor-pointer">

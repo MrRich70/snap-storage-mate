@@ -1,6 +1,7 @@
 
 import { nanoid } from 'nanoid';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Folder {
   id: string;
@@ -25,7 +26,6 @@ export interface ImageFile {
 export const initializeStorage = () => {
   // Check if storage is already initialized
   const folders = localStorage.getItem('folders');
-  const files = localStorage.getItem('files');
   
   if (!folders) {
     const defaultFolders: Folder[] = [
@@ -38,10 +38,6 @@ export const initializeStorage = () => {
     ];
     localStorage.setItem('folders', JSON.stringify(defaultFolders));
   }
-  
-  if (!files) {
-    localStorage.setItem('files', JSON.stringify([]));
-  }
 };
 
 // Get all folders
@@ -51,10 +47,58 @@ export const getFolders = (): Folder[] => {
 };
 
 // Get all files in a specific folder
-export const getFiles = (folderId: string): ImageFile[] => {
-  const files = localStorage.getItem('files');
-  const allFiles = files ? JSON.parse(files) as ImageFile[] : [];
-  return allFiles.filter(file => file.folderId === folderId);
+export const getFiles = async (folderId: string): Promise<ImageFile[]> => {
+  try {
+    const { data, error } = await supabase
+      .storage
+      .from('images')
+      .list(`${folderId}/`, {
+        sortBy: { column: 'name', order: 'asc' }
+      });
+    
+    if (error) {
+      console.error('Error fetching files:', error);
+      toast.error('Failed to fetch files');
+      return [];
+    }
+    
+    const imageFiles: ImageFile[] = [];
+    
+    for (const item of data || []) {
+      if (!item.name.startsWith('.')) { // Skip hidden files
+        const fileId = item.id || nanoid();
+        const filePath = `${folderId}/${item.name}`;
+        
+        const { data: publicUrl } = supabase
+          .storage
+          .from('images')
+          .getPublicUrl(filePath);
+          
+        const { data: thumbnailUrl } = supabase
+          .storage
+          .from('images')
+          .getPublicUrl(filePath);
+          
+        imageFiles.push({
+          id: fileId,
+          name: item.name,
+          url: publicUrl.publicUrl,
+          thumbnailUrl: thumbnailUrl.publicUrl,
+          size: item.metadata?.size || 0,
+          type: item.metadata?.mimetype || '',
+          folderId: folderId,
+          createdAt: item.created_at || new Date().toISOString(),
+          updatedAt: item.updated_at || new Date().toISOString()
+        });
+      }
+    }
+    
+    return imageFiles;
+  } catch (error) {
+    console.error('Error fetching files:', error);
+    toast.error('Failed to fetch files');
+    return [];
+  }
 };
 
 // Get folder by ID
@@ -96,84 +140,146 @@ export const renameFolder = (folderId: string, newName: string): boolean => {
 };
 
 // Delete a folder and all its contents
-export const deleteFolder = (folderId: string): boolean => {
+export const deleteFolder = async (folderId: string): Promise<boolean> => {
   if (folderId === 'root') {
     toast.error('Cannot delete root folder');
     return false;
   }
   
-  const folders = getFolders().filter(folder => folder.id !== folderId);
-  const files = localStorage.getItem('files');
-  const allFiles = files ? JSON.parse(files) as ImageFile[] : [];
-  const remainingFiles = allFiles.filter(file => file.folderId !== folderId);
-  
-  localStorage.setItem('folders', JSON.stringify(folders));
-  localStorage.setItem('files', JSON.stringify(remainingFiles));
-  
-  toast.success('Folder deleted');
-  return true;
+  try {
+    // Get files in the folder
+    const files = await getFiles(folderId);
+    
+    // Delete all files in the folder
+    for (const file of files) {
+      await deleteFile(file.id, folderId);
+    }
+    
+    // Delete folder from local storage
+    const folders = getFolders().filter(folder => folder.id !== folderId);
+    localStorage.setItem('folders', JSON.stringify(folders));
+    
+    toast.success('Folder deleted');
+    return true;
+  } catch (error) {
+    console.error('Error deleting folder:', error);
+    toast.error('Failed to delete folder');
+    return false;
+  }
 };
 
-// Upload a file (simulated for demo)
+// Upload a file to Supabase Storage
 export const uploadFile = async (file: File, folderId: string): Promise<ImageFile> => {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
+  const fileExt = file.name.split('.').pop();
+  const fileId = nanoid();
+  const fileName = file.name;
+  const filePath = `${folderId}/${fileName}`;
+
+  try {
+    const { error: uploadError } = await supabase
+      .storage
+      .from('images')
+      .upload(filePath, file);
+      
+    if (uploadError) {
+      throw uploadError;
+    }
     
-    reader.onload = (e) => {
-      const files = localStorage.getItem('files');
-      const allFiles = files ? JSON.parse(files) as ImageFile[] : [];
+    const { data: publicUrl } = supabase
+      .storage
+      .from('images')
+      .getPublicUrl(filePath);
       
-      // Create a thumbnail by using the same data URL for demo
-      const fileUrl = e.target?.result as string;
-      
-      const newFile: ImageFile = {
-        id: nanoid(),
-        name: file.name,
-        url: fileUrl,
-        thumbnailUrl: fileUrl,
-        size: file.size,
-        type: file.type,
-        folderId,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      localStorage.setItem('files', JSON.stringify([...allFiles, newFile]));
-      toast.success(`File "${file.name}" uploaded`);
-      resolve(newFile);
+    const newFile: ImageFile = {
+      id: fileId,
+      name: fileName,
+      url: publicUrl.publicUrl,
+      thumbnailUrl: publicUrl.publicUrl,
+      size: file.size,
+      type: file.type,
+      folderId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
     
-    reader.readAsDataURL(file);
-  });
+    toast.success(`File "${file.name}" uploaded`);
+    return newFile;
+  } catch (error) {
+    console.error('Upload error:', error);
+    toast.error('Failed to upload file');
+    throw error;
+  }
 };
 
 // Rename a file
-export const renameFile = (fileId: string, newName: string): boolean => {
-  const files = localStorage.getItem('files');
-  const allFiles = files ? JSON.parse(files) as ImageFile[] : [];
-  const fileIndex = allFiles.findIndex(file => file.id === fileId);
-  
-  if (fileIndex < 0) {
-    toast.error('File not found');
+export const renameFile = async (fileId: string, newName: string, folderId: string): Promise<boolean> => {
+  try {
+    // Get the files in the folder to find the file
+    const files = await getFiles(folderId);
+    const file = files.find(f => f.id === fileId);
+    
+    if (!file) {
+      toast.error('File not found');
+      return false;
+    }
+    
+    // Copy the file with the new name
+    const { error: copyError } = await supabase
+      .storage
+      .from('images')
+      .copy(`${folderId}/${file.name}`, `${folderId}/${newName}`);
+      
+    if (copyError) {
+      throw copyError;
+    }
+    
+    // Delete the original file
+    const { error: deleteError } = await supabase
+      .storage
+      .from('images')
+      .remove([`${folderId}/${file.name}`]);
+      
+    if (deleteError) {
+      throw deleteError;
+    }
+    
+    toast.success(`File renamed to "${newName}"`);
+    return true;
+  } catch (error) {
+    console.error('Rename error:', error);
+    toast.error('Failed to rename file');
     return false;
   }
-  
-  allFiles[fileIndex].name = newName;
-  allFiles[fileIndex].updatedAt = new Date().toISOString();
-  localStorage.setItem('files', JSON.stringify(allFiles));
-  toast.success(`File renamed to "${newName}"`);
-  return true;
 };
 
 // Delete a file
-export const deleteFile = (fileId: string): boolean => {
-  const files = localStorage.getItem('files');
-  const allFiles = files ? JSON.parse(files) as ImageFile[] : [];
-  const remainingFiles = allFiles.filter(file => file.id !== fileId);
-  
-  localStorage.setItem('files', JSON.stringify(remainingFiles));
-  toast.success('File deleted');
-  return true;
+export const deleteFile = async (fileId: string, folderId: string): Promise<boolean> => {
+  try {
+    // Get the files in the folder to find the file
+    const files = await getFiles(folderId);
+    const file = files.find(f => f.id === fileId);
+    
+    if (!file) {
+      toast.error('File not found');
+      return false;
+    }
+    
+    const { error } = await supabase
+      .storage
+      .from('images')
+      .remove([`${folderId}/${file.name}`]);
+      
+    if (error) {
+      throw error;
+    }
+    
+    toast.success('File deleted');
+    return true;
+  } catch (error) {
+    console.error('Delete error:', error);
+    toast.error('Failed to delete file');
+    return false;
+  }
 };
 
 // Download a file

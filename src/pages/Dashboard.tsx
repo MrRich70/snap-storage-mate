@@ -1,7 +1,7 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { useDropbox } from '@/hooks/useDropbox';
 import { 
   FolderIcon, 
   UploadIcon, 
@@ -15,7 +15,6 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import Navigation from '@/components/Navigation';
 import FolderGrid from '@/components/FolderGrid';
 import ImageGrid from '@/components/ImageGrid';
-import DropboxConnect from '@/components/DropboxConnect';
 import { toast } from 'sonner';
 import { 
   Folder, 
@@ -35,7 +34,6 @@ import Modal from '@/components/Modal';
 
 const Dashboard: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { isConnected: isDropboxConnected } = useDropbox();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -55,20 +53,18 @@ const Dashboard: React.FC = () => {
   const [viewFileModalOpen, setViewFileModalOpen] = useState<boolean>(false);
   const [uploadingFile, setUploadingFile] = useState<boolean>(false);
   
-  const [showDropboxDialog, setShowDropboxDialog] = useState(false);
-  
   useEffect(() => {
-    if (!isAuthenticated && !isLoading) {
+    if (!isAuthenticated && !authLoading) {
       navigate('/');
     }
-  }, [isAuthenticated, navigate, isLoading]);
+  }, [isAuthenticated, navigate, authLoading]);
   
   useEffect(() => {
     initializeStorage();
     loadCurrentFolder('root');
   }, []);
   
-  const loadCurrentFolder = (folderId: string) => {
+  const loadCurrentFolder = async (folderId: string) => {
     setIsLoading(true);
     
     try {
@@ -76,7 +72,7 @@ const Dashboard: React.FC = () => {
       const folderChildren = allFolders.filter(folder => folder.parentId === folderId);
       setFolders(folderChildren);
       
-      const folderFiles = getFiles(folderId);
+      const folderFiles = await getFiles(folderId);
       setFiles(folderFiles);
       
       setCurrentFolderId(folderId);
@@ -107,12 +103,6 @@ const Dashboard: React.FC = () => {
       setIsLoading(false);
     }
   };
-  
-  useEffect(() => {
-    if (isAuthenticated && !isDropboxConnected && !authLoading) {
-      setShowDropboxDialog(true);
-    }
-  }, [isAuthenticated, isDropboxConnected, authLoading]);
   
   const handleFolderClick = (folder: Folder) => {
     loadCurrentFolder(folder.id);
@@ -148,9 +138,9 @@ const Dashboard: React.FC = () => {
     setDeleteFolderModalOpen(true);
   };
   
-  const handleDeleteFolder = () => {
+  const handleDeleteFolder = async () => {
     if (selectedFolder) {
-      deleteFolder(selectedFolder.id);
+      await deleteFolder(selectedFolder.id);
       loadCurrentFolder(currentFolderId);
     }
   };
@@ -186,9 +176,9 @@ const Dashboard: React.FC = () => {
     setRenameFileModalOpen(true);
   };
   
-  const handleRenameFile = (newName: string) => {
+  const handleRenameFile = async (newName: string) => {
     if (selectedFile) {
-      renameFile(selectedFile.id, newName);
+      await renameFile(selectedFile.id, newName, currentFolderId);
       loadCurrentFolder(currentFolderId);
     }
   };
@@ -198,9 +188,9 @@ const Dashboard: React.FC = () => {
     setDeleteFileModalOpen(true);
   };
   
-  const handleDeleteFile = () => {
+  const handleDeleteFile = async () => {
     if (selectedFile) {
-      deleteFile(selectedFile.id);
+      await deleteFile(selectedFile.id, currentFolderId);
       loadCurrentFolder(currentFolderId);
     }
   };
@@ -232,12 +222,6 @@ const Dashboard: React.FC = () => {
       <Navigation onUpload={handleUploadClick} />
       
       <main className="flex-1 overflow-auto p-6">
-        {!isDropboxConnected && (
-          <div className="mb-6">
-            <DropboxConnect />
-          </div>
-        )}
-        
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center overflow-x-auto no-scrollbar">
             {currentPath.length > 1 && (
@@ -439,18 +423,6 @@ const Dashboard: React.FC = () => {
               </p>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog open={showDropboxDialog} onOpenChange={setShowDropboxDialog}>
-        <DialogContent className="max-w-md">
-          <div className="space-y-4 p-2">
-            <h2 className="text-xl font-bold">Connect to Dropbox</h2>
-            <p className="text-muted-foreground">
-              Connect your account to Dropbox to store and organize your images in the cloud.
-            </p>
-            <DropboxConnect />
-          </div>
         </DialogContent>
       </Dialog>
     </div>
