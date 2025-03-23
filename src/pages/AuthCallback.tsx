@@ -2,28 +2,21 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
-import { LockIcon } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import EmailVerificationStatus from '@/components/auth/EmailVerificationStatus';
+import PasswordResetForm from '@/components/auth/PasswordResetForm';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 const AuthCallback = () => {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isPasswordReset, setIsPasswordReset] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(true);
   const [verificationStatus, setVerificationStatus] = useState<'success' | 'error' | null>(null);
   const [verificationMessage, setVerificationMessage] = useState('');
   
   const navigate = useNavigate();
   const location = useLocation();
-  const { updatePassword, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -77,148 +70,28 @@ const AuthCallback = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search, navigate, isAuthenticated]);
   
-  const handlePasswordReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
-    
-    if (password.length < 6) {
-      toast.error('Password must be at least 6 characters long');
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    try {
-      const success = await updatePassword(password);
-      
-      if (success) {
-        toast.success('Password updated successfully');
-        setTimeout(() => navigate('/'), 1000); // Redirect to login page
-      }
-    } catch (error) {
-      console.error('Error resetting password:', error);
-      toast.error('Failed to reset password. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
+  // Show loading spinner while processing
   if (isProcessing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-lg">Processing your request...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
   
+  // Show verification status (success or error)
   if (verificationStatus) {
-    const redirectText = isAuthenticated ? 
-      "You will be redirected to your dashboard in a few seconds." : 
-      "You will be redirected to the login page in a few seconds.";
-    
-    const buttonText = isAuthenticated ? "Go to Dashboard" : "Login Now";
-    const buttonAction = () => navigate(isAuthenticated ? '/dashboard' : '/');
-    
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/30 p-4">
-        <Card className="w-full max-w-md mx-auto animate-zoom-in">
-          <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold">
-              {verificationStatus === 'success' ? 'Email Verified' : 'Verification Failed'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Alert className={verificationStatus === 'success' ? "border-green-500 bg-green-50 dark:bg-green-950/20" : "border-red-500 bg-red-50 dark:bg-red-950/20"}>
-              {verificationStatus === 'success' ? (
-                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-              ) : (
-                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-              )}
-              <AlertTitle className={verificationStatus === 'success' ? "text-green-800 dark:text-green-300" : "text-red-800 dark:text-red-300"}>
-                {verificationStatus === 'success' ? 'Success' : 'Error'}
-              </AlertTitle>
-              <AlertDescription className={verificationStatus === 'success' ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}>
-                {verificationMessage}
-              </AlertDescription>
-            </Alert>
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground mb-4">{redirectText}</p>
-              <Button onClick={buttonAction}>{buttonText}</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <EmailVerificationStatus 
+        status={verificationStatus} 
+        message={verificationMessage} 
+        isAuthenticated={isAuthenticated} 
+      />
     );
   }
   
+  // Show password reset form
   if (isPasswordReset) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/30 p-4">
-        <Card className="w-full max-w-md mx-auto animate-zoom-in">
-          <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold">Reset Your Password</CardTitle>
-            <CardDescription>Please enter your new password</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handlePasswordReset} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">New Password</Label>
-                <div className="relative">
-                  <LockIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10"
-                    required
-                    minLength={6}
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <div className="relative">
-                  <LockIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-10"
-                    required
-                    minLength={6}
-                  />
-                </div>
-              </div>
-              
-              <Button 
-                type="submit" 
-                className="w-full mt-6" 
-                disabled={isLoading}
-              >
-                {isLoading ? 'Updating...' : 'Update Password'}
-              </Button>
-            </form>
-          </CardContent>
-          <CardFooter className="text-center text-sm text-muted-foreground">
-            Your password must be at least 6 characters long
-          </CardFooter>
-        </Card>
-      </div>
-    );
+    return <PasswordResetForm />;
   }
   
+  // Fallback (should rarely happen)
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center">
