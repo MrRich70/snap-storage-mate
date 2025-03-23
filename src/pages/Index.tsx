@@ -18,7 +18,7 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-muted/30">
       <header className="p-6">
-        <h1 className="text-2xl font-bold tracking-tight animate-fade-in">SnapStore</h1>
+        <h1 className="text-2xl font-bold tracking-tight animate-fade-in">NJoy Easy Image Share</h1>
       </header>
       
       <main className="flex-1 flex flex-col items-center justify-center p-6">
@@ -60,7 +60,7 @@ const Index = () => {
       </main>
       
       <footer className="p-6 text-center text-sm text-muted-foreground animate-fade-in animation-delay-400">
-        <p>© {new Date().getFullYear()} SnapStore. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} NJoy Easy Image Share. All rights reserved.</p>
       </footer>
     </div>
   );
