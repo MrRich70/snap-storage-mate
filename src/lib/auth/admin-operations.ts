@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AuthUser } from './types';
@@ -43,9 +42,9 @@ export const getAllUsers = async (): Promise<AuthUser[]> => {
     }
     
     // Map and merge auth users with profile data
-    const users: AuthUser[] = authUsers ? authUsers.map(authUser => {
-      // Find matching profile
-      const profile = profileData?.find(p => p.id === authUser.id) || {};
+    const users: AuthUser[] = Array.isArray(authUsers) ? authUsers.map(authUser => {
+      // Find matching profile, with proper null/undefined check
+      const profile = profileData?.find(p => p.id === authUser.id) || { name: '' };
       
       // Determine if user is admin
       const userAccessCode = authUser.raw_user_meta_data?.accessCode || '';
