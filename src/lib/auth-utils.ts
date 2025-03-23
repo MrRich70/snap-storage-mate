@@ -1,3 +1,4 @@
+
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -37,10 +38,10 @@ export const loginWithPassword = async (
       return false;
     }
 
-    // Default code "servpro" is always allowed 
-    if (accessCode.toLowerCase() !== 'servpro') {
-      // In a real implementation, we'd check the access code against a database
-      // For now, we'll just check if it matches our default code
+    // Check for both default code "servpro" and admin code "njoyadmin"
+    const validAccessCode = accessCode.toLowerCase() === 'servpro' || accessCode.toLowerCase() === 'njoyadmin';
+    
+    if (!validAccessCode) {
       toast.error('Invalid access code');
       return false;
     }
@@ -87,8 +88,10 @@ export const signupWithPassword = async (
       return false;
     }
 
-    // Default code "servpro" is always allowed
-    if (accessCode.toLowerCase() !== 'servpro') {
+    // Check for both default code "servpro" and admin code "njoyadmin"
+    const validAccessCode = accessCode.toLowerCase() === 'servpro' || accessCode.toLowerCase() === 'njoyadmin';
+    
+    if (!validAccessCode) {
       toast.error('Invalid access code');
       return false;
     }
