@@ -23,7 +23,7 @@ const AuthCallback = () => {
   
   const navigate = useNavigate();
   const location = useLocation();
-  const { updatePassword } = useAuth();
+  const { updatePassword, isAuthenticated } = useAuth();
   
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -47,13 +47,27 @@ const AuthCallback = () => {
         
         // Successfully verified email
         setVerificationStatus('success');
-        setVerificationMessage('Your email has been successfully verified! You can now log in.');
-        setTimeout(() => navigate('/'), 5000); // Redirect to login page after 5 seconds
+        setVerificationMessage('Your email has been successfully verified!');
+        
+        if (isAuthenticated) {
+          // If user is already logged in (auto-login)
+          setTimeout(() => navigate('/dashboard'), 4000);
+        } else {
+          // If not logged in, redirect to login page
+          setTimeout(() => navigate('/'), 4000);
+        }
       } catch (error: any) {
         console.error('Error handling auth callback:', error);
         setVerificationStatus('error');
         setVerificationMessage('Failed to verify your email. Please try again or contact support.');
-        setTimeout(() => navigate('/'), 5000); // Redirect to login page after 5 seconds
+        
+        if (isAuthenticated) {
+          // If user is already logged in (auto-login)
+          setTimeout(() => navigate('/dashboard'), 4000);
+        } else {
+          // If not logged in, redirect to login page
+          setTimeout(() => navigate('/'), 4000);
+        }
       } finally {
         setIsProcessing(false);
       }
@@ -61,7 +75,7 @@ const AuthCallback = () => {
     
     handleAuthCallback();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.search, navigate]);
+  }, [location.search, navigate, isAuthenticated]);
   
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,6 +119,13 @@ const AuthCallback = () => {
   }
   
   if (verificationStatus) {
+    const redirectText = isAuthenticated ? 
+      "You will be redirected to your dashboard in a few seconds." : 
+      "You will be redirected to the login page in a few seconds.";
+    
+    const buttonText = isAuthenticated ? "Go to Dashboard" : "Login Now";
+    const buttonAction = () => navigate(isAuthenticated ? '/dashboard' : '/');
+    
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/30 p-4">
         <Card className="w-full max-w-md mx-auto animate-zoom-in">
@@ -128,8 +149,8 @@ const AuthCallback = () => {
               </AlertDescription>
             </Alert>
             <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground mb-4">You will be redirected to the login page in a few seconds.</p>
-              <Button onClick={() => navigate('/')}>Login Now</Button>
+              <p className="text-sm text-muted-foreground mb-4">{redirectText}</p>
+              <Button onClick={buttonAction}>{buttonText}</Button>
             </div>
           </CardContent>
         </Card>

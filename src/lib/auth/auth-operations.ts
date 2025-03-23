@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AuthUser, isValidAccessCode } from './types';
@@ -89,8 +90,21 @@ export const signupWithPassword = async (
     }
     
     if (data.user) {
-      // Do not auto-login after signup - wait for email verification
+      // Auto-login after signup - even without email verification
       toast.success('Account created successfully! Please check your email to verify your account.');
+      
+      // Login the user right after signup
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (loginError) {
+        console.error('Auto-login error:', loginError.message);
+        toast.error('Account created but auto-login failed. Please login manually.');
+        return false;
+      }
+      
       return true;
     } else {
       toast.error('Signup failed');
