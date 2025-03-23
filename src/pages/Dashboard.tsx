@@ -2,19 +2,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { 
-  FolderIcon, 
-  UploadIcon, 
-  FolderPlusIcon,
-  ArrowLeftIcon,
-  Loader2Icon,
-  XIcon
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Loader2Icon } from 'lucide-react';
 import Navigation from '@/components/Navigation';
-import FolderGrid from '@/components/FolderGrid';
-import ImageGrid from '@/components/ImageGrid';
+import BreadcrumbNav from '@/components/dashboard/BreadcrumbNav';
+import ActionButtons from '@/components/dashboard/ActionButtons';
+import DashboardContent from '@/components/dashboard/DashboardContent';
+import ImageViewer from '@/components/dashboard/ImageViewer';
+import DashboardModals from '@/components/dashboard/DashboardModals';
+import UploadProgress from '@/components/UploadProgress';
 import { toast } from 'sonner';
 import { 
   Folder, 
@@ -30,8 +25,6 @@ import {
   deleteFile,
   downloadFile
 } from '@/utils/storage';
-import Modal from '@/components/Modal';
-import UploadProgress from '@/components/UploadProgress';
 import { 
   getUploadProgress, 
   retryUpload, 
@@ -139,6 +132,13 @@ const Dashboard: React.FC = () => {
   
   const handleBreadcrumbClick = (folder: Folder) => {
     loadCurrentFolder(folder.id);
+  };
+
+  const handleBackClick = () => {
+    if (currentPath.length > 1) {
+      const parentFolder = currentPath[currentPath.length - 2];
+      loadCurrentFolder(parentFolder.id);
+    }
   };
   
   const handleCreateFolderClick = () => {
@@ -300,114 +300,40 @@ const Dashboard: React.FC = () => {
       
       <main className="flex-1 overflow-auto p-6">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center overflow-x-auto no-scrollbar">
-            {currentPath.length > 1 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="mr-1"
-                onClick={() => {
-                  const parentFolder = currentPath[currentPath.length - 2];
-                  loadCurrentFolder(parentFolder.id);
-                }}
-              >
-                <ArrowLeftIcon className="h-4 w-4" />
-              </Button>
-            )}
-            
-            <div className="flex items-center space-x-1">
-              {currentPath.map((folder, index) => (
-                <React.Fragment key={folder.id}>
-                  {index > 0 && <span className="text-muted-foreground mx-1">/</span>}
-                  <button
-                    onClick={() => handleBreadcrumbClick(folder)}
-                    className={`px-2 py-1 rounded-md hover:bg-muted transition-colors ${
-                      index === currentPath.length - 1 
-                        ? 'font-medium' 
-                        : 'text-muted-foreground'
-                    }`}
-                  >
-                    {folder.name}
-                  </button>
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
+          <BreadcrumbNav 
+            currentPath={currentPath}
+            onBreadcrumbClick={handleBreadcrumbClick}
+            onBackClick={handleBackClick}
+          />
           
-          <div className="flex items-center space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="flex items-center gap-1"
-              onClick={handleCreateFolderClick}
-            >
-              <FolderPlusIcon className="h-4 w-4" />
-              <span>New Folder</span>
-            </Button>
-            
-            <Button
-              size="sm"
-              onClick={handleUploadClick}
-              disabled={uploadingFile}
-              className="relative"
-            >
-              {uploadingFile ? (
-                <>
-                  <Loader2Icon className="h-4 w-4 mr-2 animate-spin" />
-                  <span>Uploading...</span>
-                </>
-              ) : (
-                <>
-                  <UploadIcon className="h-4 w-4 mr-2" />
-                  <span>Upload Images</span>
-                </>
-              )}
-            </Button>
-            
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileInputChange}
-              className="hidden"
-              accept="image/*"
-              multiple
-            />
-          </div>
+          <ActionButtons
+            onCreateFolderClick={handleCreateFolderClick}
+            onUploadClick={handleUploadClick}
+            isUploading={uploadingFile}
+          />
+          
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileInputChange}
+            className="hidden"
+            accept="image/*"
+            multiple
+          />
         </div>
         
-        {isLoading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="flex flex-col items-center">
-              <div className="h-10 w-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin-slow"></div>
-              <p className="mt-4 text-muted-foreground">Loading...</p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {folders.length > 0 && (
-              <div>
-                <h2 className="text-lg font-medium mb-4">Folders</h2>
-                <FolderGrid
-                  folders={folders}
-                  onFolderClick={handleFolderClick}
-                  onRenameFolder={handleRenameFolderClick}
-                  onDeleteFolder={handleDeleteFolderClick}
-                />
-              </div>
-            )}
-            
-            <div>
-              <h2 className="text-lg font-medium mb-4">Images</h2>
-              <ImageGrid
-                files={files}
-                onRenameFile={handleRenameFileClick}
-                onDeleteFile={handleDeleteFileClick}
-                onDownloadFile={handleDownloadFile}
-                onViewFile={handleViewFile}
-              />
-            </div>
-          </div>
-        )}
+        <DashboardContent 
+          isLoading={isLoading}
+          folders={folders}
+          files={files}
+          onFolderClick={handleFolderClick}
+          onRenameFolder={handleRenameFolderClick}
+          onDeleteFolder={handleDeleteFolderClick}
+          onRenameFile={handleRenameFileClick}
+          onDeleteFile={handleDeleteFileClick}
+          onDownloadFile={handleDownloadFile}
+          onViewFile={handleViewFile}
+        />
       </main>
       
       {/* Upload Progress Component */}
@@ -418,98 +344,31 @@ const Dashboard: React.FC = () => {
         onClearCompleted={handleClearCompletedUploads}
       />
       
-      <Modal
-        title="Create New Folder"
-        isOpen={newFolderModalOpen}
-        onClose={() => setNewFolderModalOpen(false)}
-        onConfirm={handleCreateFolder}
-        placeholder="Enter folder name"
-        confirmText="Create"
+      <DashboardModals
+        newFolderModalOpen={newFolderModalOpen}
+        renameFolderModalOpen={renameFolderModalOpen}
+        renameFileModalOpen={renameFileModalOpen}
+        deleteFolderModalOpen={deleteFolderModalOpen}
+        deleteFileModalOpen={deleteFileModalOpen}
+        selectedFolder={selectedFolder}
+        selectedFile={selectedFile}
+        onCloseNewFolderModal={() => setNewFolderModalOpen(false)}
+        onCloseRenameFolderModal={() => setRenameFolderModalOpen(false)}
+        onCloseRenameFileModal={() => setRenameFileModalOpen(false)}
+        onCloseDeleteFolderModal={() => setDeleteFolderModalOpen(false)}
+        onCloseDeleteFileModal={() => setDeleteFileModalOpen(false)}
+        onCreateFolder={handleCreateFolder}
+        onRenameFolder={handleRenameFolder}
+        onRenameFile={handleRenameFile}
+        onDeleteFolder={handleDeleteFolder}
+        onDeleteFile={handleDeleteFile}
       />
       
-      <Modal
-        title="Rename Folder"
-        isOpen={renameFolderModalOpen}
-        onClose={() => setRenameFolderModalOpen(false)}
-        onConfirm={handleRenameFolder}
-        defaultValue={selectedFolder?.name}
-        placeholder="Enter new folder name"
-        confirmText="Rename"
+      <ImageViewer
+        isOpen={viewFileModalOpen}
+        onClose={() => setViewFileModalOpen(false)}
+        selectedFile={selectedFile}
       />
-      
-      <Modal
-        title="Delete Folder"
-        isOpen={deleteFolderModalOpen}
-        onClose={() => setDeleteFolderModalOpen(false)}
-        onConfirm={handleDeleteFolder}
-        showInput={false}
-        confirmText="Delete"
-      >
-        <p>Are you sure you want to delete this folder and all its contents?</p>
-        <p className="font-medium mt-2">{selectedFolder?.name}</p>
-        <p className="text-sm text-destructive mt-2">This action cannot be undone.</p>
-      </Modal>
-      
-      <Modal
-        title="Rename File"
-        isOpen={renameFileModalOpen}
-        onClose={() => setRenameFileModalOpen(false)}
-        onConfirm={handleRenameFile}
-        defaultValue={selectedFile?.name}
-        placeholder="Enter new file name"
-        confirmText="Rename"
-      />
-      
-      <Modal
-        title="Delete File"
-        isOpen={deleteFileModalOpen}
-        onClose={() => setDeleteFileModalOpen(false)}
-        onConfirm={handleDeleteFile}
-        showInput={false}
-        confirmText="Delete"
-      >
-        <p>Are you sure you want to delete this file?</p>
-        <p className="font-medium mt-2">{selectedFile?.name}</p>
-        <p className="text-sm text-destructive mt-2">This action cannot be undone.</p>
-      </Modal>
-      
-      <Dialog 
-        open={viewFileModalOpen} 
-        onOpenChange={(open) => !open && setViewFileModalOpen(false)}
-      >
-        <DialogContent className="sm:max-w-4xl glass backdrop-blur-xl p-1 animate-zoom-in">
-          <div className="absolute top-2 right-2 z-10">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-full bg-black/40 text-white hover:bg-black/60"
-              onClick={() => setViewFileModalOpen(false)}
-            >
-              <XIcon className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          <div className="flex items-center justify-center w-full h-full max-h-[80vh] overflow-hidden">
-            {selectedFile && (
-              <img
-                src={selectedFile.url}
-                alt={selectedFile.name}
-                className="max-w-full max-h-full object-contain"
-              />
-            )}
-          </div>
-          
-          {selectedFile && (
-            <div className="p-2 text-center">
-              <p className="font-medium">{selectedFile.name}</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {(selectedFile.size / 1024).toFixed(0)} KB • 
-                {new Date(selectedFile.updatedAt).toLocaleDateString()}
-              </p>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

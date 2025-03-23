@@ -14,10 +14,10 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ onUpload }) => {
-  const { signOut } = useAuth();
+  const { logout } = useAuth();
   
   const handleLogout = async () => {
-    await signOut();
+    await logout();
   };
 
   return (
