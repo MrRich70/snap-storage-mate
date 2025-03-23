@@ -27,31 +27,14 @@ export const loginWithPassword = async (
       return false;
     }
 
+    // First attempt to login normally
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
     
-    if (error) {
-      console.error('Supabase login error:', error.message);
-      
-      // If the error is about unconfirmed email, try to auto-confirm it
-      if (error.message.includes('Email not confirmed')) {
-        const confirmed = await confirmUserEmail(email);
-        if (confirmed) {
-          toast.success('Email confirmed automatically. Please try logging in again.');
-          return false;
-        } else {
-          toast.error(error.message);
-          return false;
-        }
-      } else {
-        toast.error(error.message);
-        return false;
-      }
-    }
-    
-    if (data.user) {
+    // If successful login, update access code and return
+    if (data.user && !error) {
       // Store the access code in user metadata
       await supabase.auth.updateUser({
         data: { accessCode }
@@ -59,10 +42,44 @@ export const loginWithPassword = async (
 
       toast.success('Successfully logged in');
       return true;
-    } else {
-      toast.error('Login failed');
+    }
+    
+    // If there's an error about unconfirmed email, try to confirm it
+    if (error && error.message.includes('Email not confirmed')) {
+      console.log('Attempting to auto-confirm email for:', email);
+      
+      const confirmed = await confirmUserEmail(email);
+      
+      if (confirmed) {
+        // Try logging in again after confirming the email
+        const secondAttempt = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        
+        if (secondAttempt.data.user && !secondAttempt.error) {
+          // Store the access code in user metadata
+          await supabase.auth.updateUser({
+            data: { accessCode }
+          });
+          
+          toast.success('Email confirmed and logged in successfully');
+          return true;
+        } else {
+          toast.error(secondAttempt.error?.message || 'Login failed after email confirmation');
+          return false;
+        }
+      } else {
+        toast.error(error.message);
+        return false;
+      }
+    } else if (error) {
+      toast.error(error.message);
       return false;
     }
+    
+    toast.error('Login failed');
+    return false;
   } catch (error) {
     console.error('Login error:', error);
     toast.error('Login failed');
