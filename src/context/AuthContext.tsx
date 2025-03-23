@@ -8,19 +8,27 @@ import {
   resetPasswordForEmail, 
   updateUserPassword, 
   logoutUser,
-  deleteUserAccount
+  deleteUserAccount,
+  getAllUsers,
+  adminDeleteUser,
+  adminDeleteAllUsers
 } from '@/lib/auth-utils';
 
 interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string, accessCode: string) => Promise<boolean>;
   signup: (name: string, email: string, password: string, accessCode: string) => Promise<boolean>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<boolean>;
   updatePassword: (password: string) => Promise<boolean>;
   deleteAccount: (email: string, password: string) => Promise<boolean>;
+  // Admin functions
+  fetchAllUsers: () => Promise<AuthUser[]>;
+  deleteUser: (userId: string) => Promise<boolean>;
+  deleteAllUsers: (exceptUserId: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,6 +40,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     user,
     isAuthenticated,
     isLoading,
+    isAdmin: user?.isAdmin || false,
     login: async (email, password, accessCode) => {
       return await loginWithPassword(email, password, accessCode);
     },
@@ -49,6 +58,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     },
     deleteAccount: async (email, password) => {
       return await deleteUserAccount(email, password);
+    },
+    // Admin functions
+    fetchAllUsers: async () => {
+      return await getAllUsers();
+    },
+    deleteUser: async (userId) => {
+      return await adminDeleteUser(userId);
+    },
+    deleteAllUsers: async (exceptUserId) => {
+      return await adminDeleteAllUsers(exceptUserId);
     }
   };
 

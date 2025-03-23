@@ -9,6 +9,7 @@ interface UseAuthSessionResult {
   session: Session | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isAdmin: boolean;
 }
 
 export const useAuthSession = (): UseAuthSessionResult => {
@@ -45,6 +46,7 @@ export const useAuthSession = (): UseAuthSessionResult => {
     user,
     session,
     isLoading,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    isAdmin: user?.isAdmin || false
   };
 };

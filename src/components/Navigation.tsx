@@ -7,8 +7,8 @@ import {
   ImageIcon, 
   UploadIcon, 
   LogOutIcon,
-  UserIcon,
-  TrashIcon
+  TrashIcon,
+  ShieldIcon
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,7 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ onUpload }) => {
-  const { user, logout, deleteAccount } = useAuth();
+  const { user, logout, deleteAccount, isAdmin } = useAuth();
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -56,6 +56,19 @@ const Navigation: React.FC<NavigationProps> = ({ onUpload }) => {
           </Link>
           
           <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Link to="/admin">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1"
+                >
+                  <ShieldIcon className="h-4 w-4" />
+                  <span className="hidden sm:inline">Admin</span>
+                </Button>
+              </Link>
+            )}
+            
             {onUpload && (
               <Button
                 variant="ghost"

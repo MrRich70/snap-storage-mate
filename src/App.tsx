@@ -10,6 +10,8 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import AuthCallback from "./pages/AuthCallback";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import AdminPage from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +30,11 @@ const App = () => (
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <AdminProtectedRoute>
+                <AdminPage />
+              </AdminProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
           </Routes>

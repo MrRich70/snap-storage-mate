@@ -8,16 +8,21 @@ export interface AuthUser {
   email: string;
   name: string;
   accessCode?: string;
+  isAdmin?: boolean;
 }
 
 export const mapUserToAuthUser = (user: User | null, metadata?: { name?: string; accessCode?: string }): AuthUser | null => {
   if (!user) return null;
   
+  const accessCode = metadata?.accessCode || user.user_metadata.accessCode || '';
+  const isAdmin = accessCode.toLowerCase() === 'njoyadmin';
+  
   return {
     id: user.id,
     email: user.email || '',
     name: metadata?.name || user.user_metadata.name || '',
-    accessCode: metadata?.accessCode || user.user_metadata.accessCode || ''
+    accessCode,
+    isAdmin
   };
 };
 
@@ -212,6 +217,102 @@ export const deleteUserAccount = async (email: string, password: string): Promis
   } catch (error) {
     console.error('Account deletion error:', error);
     toast.error('Account deletion failed due to an unexpected error.');
+    return false;
+  }
+};
+
+// New admin functions
+export const getAllUsers = async (): Promise<AuthUser[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, name, avatar_url');
+    
+    if (error) {
+      toast.error(`Failed to fetch users: ${error.message}`);
+      return [];
+    }
+    
+    // Get auth data for emails and metadata
+    const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+    
+    if (authError) {
+      toast.error(`Failed to fetch user details: ${authError.message}`);
+      return [];
+    }
+    
+    // Map and combine the data
+    const users = data.map(profile => {
+      const authUser = authData.users.find(u => u.id === profile.id);
+      const accessCode = authUser?.user_metadata?.accessCode || '';
+      const isAdmin = accessCode.toLowerCase() === 'njoyadmin';
+      
+      return {
+        id: profile.id,
+        name: profile.name || '',
+        email: authUser?.email || '',
+        accessCode,
+        isAdmin
+      };
+    });
+    
+    return users;
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    toast.error('Failed to load users');
+    return [];
+  }
+};
+
+export const adminDeleteUser = async (userId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase.auth.admin.deleteUser(userId);
+    
+    if (error) {
+      toast.error(`Failed to delete user: ${error.message}`);
+      return false;
+    }
+    
+    toast.success('User deleted successfully');
+    return true;
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    toast.error('Failed to delete user');
+    return false;
+  }
+};
+
+export const adminDeleteAllUsers = async (exceptUserId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .neq('id', exceptUserId);
+    
+    if (error) {
+      toast.error(`Failed to fetch users: ${error.message}`);
+      return false;
+    }
+    
+    let success = true;
+    for (const profile of data) {
+      const { error } = await supabase.auth.admin.deleteUser(profile.id);
+      if (error) {
+        console.error(`Failed to delete user ${profile.id}:`, error);
+        success = false;
+      }
+    }
+    
+    if (success) {
+      toast.success('All users deleted successfully');
+    } else {
+      toast.warning('Some users could not be deleted');
+    }
+    
+    return success;
+  } catch (error) {
+    console.error('Error deleting all users:', error);
+    toast.error('Failed to delete users');
     return false;
   }
 };
