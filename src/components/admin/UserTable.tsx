@@ -10,16 +10,41 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { UserX, CheckCircle, XCircle } from 'lucide-react';
+import { UserX, CheckCircle, XCircle, Mail } from 'lucide-react';
 import { AuthUser } from '@/lib/auth/types';
+import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 
 interface UserTableProps {
   users: AuthUser[];
   loading: boolean;
   handleDeleteUser: (userId: string) => void;
+  loadUsers: () => Promise<void>;
 }
 
-const UserTable: React.FC<UserTableProps> = ({ users, loading, handleDeleteUser }) => {
+const UserTable: React.FC<UserTableProps> = ({ 
+  users, 
+  loading, 
+  handleDeleteUser,
+  loadUsers 
+}) => {
+  const { confirmEmail } = useAuth();
+
+  const handleConfirmEmail = async (email: string) => {
+    try {
+      const success = await confirmEmail(email);
+      if (success) {
+        toast.success(`Email confirmed: ${email}`);
+        await loadUsers(); // Refresh user list
+      } else {
+        toast.error("Failed to confirm email");
+      }
+    } catch (error) {
+      toast.error("An error occurred while confirming email");
+      console.error(error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center my-12">
@@ -50,7 +75,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, handleDeleteUser 
             </TableRow>
           ) : (
             users.map((user) => (
-              <TableRow key={user.id}>
+              <TableRow key={user.id} className={!user.emailConfirmed ? "bg-yellow-50 dark:bg-yellow-950/20" : ""}>
                 <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.accessCode || 'N/A'}</TableCell>
@@ -75,15 +100,28 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, handleDeleteUser 
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDeleteUser(user.id)}
-                    className="flex items-center gap-1"
-                  >
-                    <UserX className="h-4 w-4" />
-                    Delete
-                  </Button>
+                  <div className="flex justify-end gap-2">
+                    {!user.emailConfirmed && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleConfirmEmail(user.email)}
+                        className="flex items-center gap-1"
+                      >
+                        <Mail className="h-4 w-4" />
+                        Confirm Email
+                      </Button>
+                    )}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteUser(user.id)}
+                      className="flex items-center gap-1"
+                    >
+                      <UserX className="h-4 w-4" />
+                      Delete
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))
@@ -95,3 +133,4 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, handleDeleteUser 
 };
 
 export default UserTable;
+

@@ -55,7 +55,8 @@ const AdminPage: React.FC = () => {
         <UserTable 
           users={users} 
           loading={loading} 
-          handleDeleteUser={handleDeleteUser} 
+          handleDeleteUser={handleDeleteUser}
+          loadUsers={loadUsers}
         />
       </main>
 
