@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { Loader2Icon } from 'lucide-react';
+import { Loader2Icon, RefreshCwIcon } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import BreadcrumbNav from '@/components/dashboard/BreadcrumbNav';
 import ActionButtons from '@/components/dashboard/ActionButtons';
@@ -30,15 +30,14 @@ import {
   clearCompletedUploads,
   uploadToSupabase
 } from '@/utils/storage';
+import { Button } from '@/components/ui/button';
 
-const SHARED_ACCESS_CODE = 'servpro';
+const SHARED_STORAGE = true;
 
 const Dashboard: React.FC = () => {
-  const { isAuthenticated, isLoading: authLoading, accessCode } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const isSharedStorage = accessCode === SHARED_ACCESS_CODE;
   
   const [currentFolderId, setCurrentFolderId] = useState<string>('root');
   const [currentPath, setCurrentPath] = useState<Folder[]>([]);
@@ -82,9 +81,9 @@ const Dashboard: React.FC = () => {
   }, [isAuthenticated, navigate, authLoading]);
   
   useEffect(() => {
-    initializeStorage(isSharedStorage);
+    initializeStorage(SHARED_STORAGE);
     loadCurrentFolder('root');
-  }, [refreshTrigger, isSharedStorage]);
+  }, [refreshTrigger]);
   
   useEffect(() => {
     resetSelection();
@@ -108,11 +107,11 @@ const Dashboard: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const allFolders = getFolders(isSharedStorage);
+      const allFolders = getFolders(SHARED_STORAGE);
       const folderChildren = allFolders.filter(folder => folder.parentId === folderId);
       setFolders(folderChildren);
       
-      const folderFiles = await getFiles(folderId, isSharedStorage);
+      const folderFiles = await getFiles(folderId, SHARED_STORAGE);
       setFiles(folderFiles);
       
       setCurrentFolderId(folderId);
@@ -144,6 +143,11 @@ const Dashboard: React.FC = () => {
     }
   };
   
+  const handleRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+    toast.success('Refreshed content');
+  };
+  
   const handleFolderClick = (folder: Folder) => {
     loadCurrentFolder(folder.id);
   };
@@ -164,7 +168,7 @@ const Dashboard: React.FC = () => {
   };
   
   const handleCreateFolder = (name: string) => {
-    createFolder(name, currentFolderId, isSharedStorage);
+    createFolder(name, currentFolderId, SHARED_STORAGE);
     loadCurrentFolder(currentFolderId);
   };
   
@@ -175,7 +179,7 @@ const Dashboard: React.FC = () => {
   
   const handleRenameFolder = (newName: string) => {
     if (selectedFolder) {
-      renameFolder(selectedFolder.id, newName, isSharedStorage);
+      renameFolder(selectedFolder.id, newName, SHARED_STORAGE);
       loadCurrentFolder(currentFolderId);
     }
   };
@@ -187,7 +191,7 @@ const Dashboard: React.FC = () => {
   
   const handleDeleteFolder = async () => {
     if (selectedFolder) {
-      await deleteFolder(selectedFolder.id, isSharedStorage);
+      await deleteFolder(selectedFolder.id, SHARED_STORAGE);
       loadCurrentFolder(currentFolderId);
     }
   };
@@ -210,7 +214,7 @@ const Dashboard: React.FC = () => {
         const cacheKey = `${currentFolderId}_${file.name}_${Date.now()}`;
         newFileCache.set(cacheKey, file);
         
-        uploadLocalFile(file, currentFolderId, isSharedStorage)
+        uploadLocalFile(file, currentFolderId, SHARED_STORAGE)
           .then(() => {
             if (i === files.length - 1) {
               setRefreshTrigger(prev => prev + 1);
@@ -239,7 +243,7 @@ const Dashboard: React.FC = () => {
   
   const handleRenameFile = async (newName: string) => {
     if (selectedFile) {
-      await renameFile(selectedFile.id, newName, currentFolderId, isSharedStorage);
+      await renameFile(selectedFile.id, newName, currentFolderId, SHARED_STORAGE);
       loadCurrentFolder(currentFolderId);
     }
   };
@@ -251,7 +255,7 @@ const Dashboard: React.FC = () => {
   
   const handleDeleteFile = async () => {
     if (selectedFile) {
-      await deleteFile(selectedFile.id, currentFolderId, isSharedStorage);
+      await deleteFile(selectedFile.id, currentFolderId, SHARED_STORAGE);
       loadCurrentFolder(currentFolderId);
     }
   };
@@ -269,7 +273,7 @@ const Dashboard: React.FC = () => {
     for (const [cacheKey, cachedFile] of fileCache.entries()) {
       if (cacheKey.includes(uploadId)) {
         try {
-          await retryUpload(uploadId, cachedFile, currentFolderId, isSharedStorage);
+          await retryUpload(uploadId, cachedFile, currentFolderId, SHARED_STORAGE);
           setRefreshTrigger(prev => prev + 1);
         } catch (error) {
           console.error('Retry failed:', error);
@@ -310,11 +314,22 @@ const Dashboard: React.FC = () => {
       
       <main className="flex-1 overflow-auto p-6">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <BreadcrumbNav 
-            currentPath={currentPath}
-            onBreadcrumbClick={handleBreadcrumbClick}
-            onBackClick={handleBackClick}
-          />
+          <div className="flex items-center gap-2">
+            <BreadcrumbNav 
+              currentPath={currentPath}
+              onBreadcrumbClick={handleBreadcrumbClick}
+              onBackClick={handleBackClick}
+            />
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={handleRefresh} 
+              title="Refresh"
+              className="ml-2"
+            >
+              <RefreshCwIcon className="h-4 w-4" />
+            </Button>
+          </div>
           
           <ActionButtons
             onCreateFolderClick={handleCreateFolderClick}

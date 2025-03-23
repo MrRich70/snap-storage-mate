@@ -6,6 +6,7 @@ import LoadingState from '@/components/dashboard/LoadingState';
 import SelectionControls from '@/components/dashboard/SelectionControls';
 import MoveFilesModal from '@/components/dashboard/MoveFilesModal';
 import { Folder, ImageFile } from '@/utils/storage';
+import { UsersIcon } from 'lucide-react';
 
 interface DashboardContentWithSelectionProps {
   isLoading: boolean;
@@ -64,6 +65,14 @@ const DashboardContentWithSelection: React.FC<DashboardContentWithSelectionProps
 
   return (
     <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Shared Workspace</h1>
+        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <UsersIcon className="h-4 w-4" />
+          <span>All users share this workspace</span>
+        </div>
+      </div>
+      
       {files.length > 0 && (
         <SelectionControls
           selectionMode={selectionMode}
