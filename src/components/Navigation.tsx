@@ -11,7 +11,6 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { LogOutIcon, UploadIcon, UserIcon } from 'lucide-react';
-import { toast } from 'sonner';
 
 interface NavigationProps {
   onUpload: () => void;
@@ -24,8 +23,8 @@ const Navigation: React.FC<NavigationProps> = ({ onUpload }) => {
     onUpload();
   };
   
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
   };
   
   return (
@@ -51,7 +50,7 @@ const Navigation: React.FC<NavigationProps> = ({ onUpload }) => {
               <Avatar className="h-8 w-8 cursor-pointer">
                 <AvatarImage src="" />
                 <AvatarFallback className="bg-primary text-white">
-                  {user?.name.charAt(0) || 'U'}
+                  {user?.name?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>

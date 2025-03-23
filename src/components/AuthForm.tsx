@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,9 @@ const AuthForm: React.FC = () => {
       if (mode === 'login') {
         success = await login(email, password);
       } else {
+        if (!name.trim()) {
+          throw new Error('Name is required');
+        }
         success = await signup(name, email, password);
       }
     } catch (error) {
@@ -108,6 +112,7 @@ const AuthForm: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-10"
                 required
+                minLength={6}
               />
             </div>
           </div>
@@ -125,11 +130,6 @@ const AuthForm: React.FC = () => {
             }
           </Button>
         </form>
-        
-        <div className="mt-4 flex items-center justify-center text-sm text-muted-foreground">
-          <CloudIcon className="h-4 w-4 mr-2" />
-          <span>You'll be able to connect to Dropbox after sign in</span>
-        </div>
       </CardContent>
       <CardFooter className="flex flex-col space-y-4 text-center">
         <div className="text-sm text-muted-foreground">
@@ -144,14 +144,6 @@ const AuthForm: React.FC = () => {
             {mode === 'login' ? 'Sign Up' : 'Sign In'}
           </button>
         </div>
-        
-        {mode === 'login' && (
-          <div className="text-xs text-muted-foreground">
-            <p className="mb-2">Demo Account:</p>
-            <p>Email: user@example.com</p>
-            <p>Password: password</p>
-          </div>
-        )}
       </CardFooter>
     </Card>
   );
