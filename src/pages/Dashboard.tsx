@@ -229,7 +229,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="flex h-screen flex-col bg-background">
-      <Navigation />
+      <Navigation onUpload={handleUploadClick} />
       
       <main className="flex-1 overflow-auto p-6">
         {!isDropboxConnected && (
