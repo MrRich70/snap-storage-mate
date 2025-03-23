@@ -96,6 +96,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(true);
     
     try {
+      // Changed to not require email verification
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -103,7 +104,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           data: {
             name
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          // Removed emailRedirectTo parameter since we're not requiring verification
         }
       });
       
@@ -113,7 +114,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       
       if (data.user) {
-        toast.success('Verification email sent. Please check your inbox.');
+        // Auto-login after signup since we're not requiring verification
+        const { error: loginError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        
+        if (loginError) {
+          toast.error(loginError.message);
+          return false;
+        }
+        
+        toast.success('Account created successfully! You are now logged in.');
         return true;
       } else {
         toast.error('Signup failed');
