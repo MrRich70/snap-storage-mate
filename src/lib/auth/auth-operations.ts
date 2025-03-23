@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AuthUser, isValidAccessCode } from './types';
@@ -73,7 +74,7 @@ export const signupWithPassword = async (
       return false;
     }
 
-    // Sign up the user without auto-login
+    // Sign up the user with email confirmation enabled
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -93,6 +94,11 @@ export const signupWithPassword = async (
     }
     
     if (data.user) {
+      if (data.user.identities && data.user.identities.length === 0) {
+        toast.error('This email is already registered. Please log in instead.');
+        return false;
+      }
+      
       toast.success('Account created successfully! Please check your email to verify your account.');
       return true;
     } else {
@@ -109,7 +115,7 @@ export const signupWithPassword = async (
 export const resetPasswordForEmail = async (email: string): Promise<boolean> => {
   try {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
+      redirectTo: `${window.location.origin}/auth/callback`,
     });
     
     if (error) {

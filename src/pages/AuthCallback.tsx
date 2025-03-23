@@ -42,32 +42,29 @@ const AuthCallback = () => {
         setVerificationStatus('success');
         setVerificationMessage('Your email has been successfully verified!');
         
-        if (isAuthenticated) {
-          // If user is already logged in (auto-login)
-          setTimeout(() => navigate('/dashboard'), 4000);
-        } else {
-          // If not logged in, redirect to login page
-          setTimeout(() => navigate('/'), 4000);
-        }
+        // Delay redirecting to give time to read the message
+        setTimeout(() => {
+          if (isAuthenticated) {
+            navigate('/dashboard');
+          } else {
+            navigate('/');
+          }
+        }, 3000);
       } catch (error: any) {
         console.error('Error handling auth callback:', error);
         setVerificationStatus('error');
         setVerificationMessage('Failed to verify your email. Please try again or contact support.');
         
-        if (isAuthenticated) {
-          // If user is already logged in (auto-login)
-          setTimeout(() => navigate('/dashboard'), 4000);
-        } else {
-          // If not logged in, redirect to login page
-          setTimeout(() => navigate('/'), 4000);
-        }
+        // Delay redirecting to give time to read the error
+        setTimeout(() => {
+          navigate('/');
+        }, 3000);
       } finally {
         setIsProcessing(false);
       }
     };
     
     handleAuthCallback();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search, navigate, isAuthenticated]);
   
   // Show loading spinner while processing
@@ -96,9 +93,9 @@ const AuthCallback = () => {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center">
         <div className="animate-bounce text-5xl mb-4">✅</div>
-        <h1 className="text-2xl font-bold mb-2">Email Verified!</h1>
-        <p className="mb-4">You'll be redirected to your dashboard shortly.</p>
-        <Button onClick={() => navigate('/dashboard')}>Go to Dashboard</Button>
+        <h1 className="text-2xl font-bold mb-2">Verification Complete</h1>
+        <p className="mb-4">You'll be redirected shortly.</p>
+        <Button onClick={() => navigate('/')}>Go to Login</Button>
       </div>
     </div>
   );
