@@ -6,10 +6,13 @@ import {
   Edit2Icon,
   Trash2Icon,
   DownloadIcon,
-  ZoomInIcon
+  ZoomInIcon,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { ImageFile } from '@/utils/storage';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +26,9 @@ interface ImageGridProps {
   onDeleteFile: (file: ImageFile) => void;
   onDownloadFile: (file: ImageFile) => void;
   onViewFile: (file: ImageFile) => void;
+  selectedFiles?: string[];
+  onSelectFile?: (fileId: string, isSelected: boolean) => void;
+  selectionMode?: boolean;
 }
 
 const ImageGrid: React.FC<ImageGridProps> = ({
@@ -30,7 +36,10 @@ const ImageGrid: React.FC<ImageGridProps> = ({
   onRenameFile,
   onDeleteFile,
   onDownloadFile,
-  onViewFile
+  onViewFile,
+  selectedFiles = [],
+  onSelectFile,
+  selectionMode = false
 }) => {
   const [loaded, setLoaded] = useState<Record<string, boolean>>({});
 
@@ -47,16 +56,39 @@ const ImageGrid: React.FC<ImageGridProps> = ({
     setLoaded(prev => ({ ...prev, [id]: true }));
   };
 
+  const handleImageClick = (file: ImageFile) => {
+    if (selectionMode && onSelectFile) {
+      const isSelected = selectedFiles.includes(file.id);
+      onSelectFile(file.id, !isSelected);
+    } else {
+      onViewFile(file);
+    }
+  };
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 animate-fade-in">
       {files.map((file) => (
         <div
           key={file.id}
-          className="group relative flex flex-col border rounded-lg overflow-hidden bg-card transition-all duration-200 hover:shadow-md animate-slide-up"
+          className={`group relative flex flex-col border rounded-lg overflow-hidden bg-card transition-all duration-200 hover:shadow-md animate-slide-up ${selectedFiles.includes(file.id) ? 'ring-2 ring-primary' : ''}`}
         >
+          {selectionMode && (
+            <div className="absolute left-2 top-2 z-10">
+              <Checkbox 
+                checked={selectedFiles.includes(file.id)}
+                onCheckedChange={(checked) => {
+                  if (onSelectFile) {
+                    onSelectFile(file.id, !!checked);
+                  }
+                }}
+                className="h-5 w-5 bg-white/80 rounded-sm"
+              />
+            </div>
+          )}
+          
           <div 
             className="h-32 flex items-center justify-center overflow-hidden bg-muted cursor-pointer relative"
-            onClick={() => onViewFile(file)}
+            onClick={() => handleImageClick(file)}
           >
             {!loaded[file.id] && (
               <div className="absolute inset-0 flex items-center justify-center">
@@ -72,7 +104,7 @@ const ImageGrid: React.FC<ImageGridProps> = ({
             />
             
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-              <ZoomInIcon className="text-white h-8 w-8" />
+              {!selectionMode && <ZoomInIcon className="text-white h-8 w-8" />}
             </div>
           </div>
 

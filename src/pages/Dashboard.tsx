@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -10,6 +9,7 @@ import DashboardContent from '@/components/dashboard/DashboardContent';
 import ImageViewer from '@/components/dashboard/ImageViewer';
 import DashboardModals from '@/components/dashboard/DashboardModals';
 import UploadProgress from '@/components/UploadProgress';
+import { useFileSelection } from '@/hooks/useFileSelection';
 import { toast } from 'sonner';
 import { 
   Folder, 
@@ -55,7 +55,18 @@ const Dashboard: React.FC = () => {
   const [viewFileModalOpen, setViewFileModalOpen] = useState<boolean>(false);
   const [uploadingFile, setUploadingFile] = useState<boolean>(false);
   
-  // Store file reference for retry operations
+  const {
+    selectionMode,
+    setSelectionMode,
+    selectedFiles,
+    handleSelectFile,
+    handleSelectAll,
+    handleDeselectAll,
+    handleDeleteSelected,
+    handleDownloadSelected,
+    resetSelection
+  } = useFileSelection(files, currentFolderId, () => setRefreshTrigger(prev => prev + 1));
+  
   const [fileCache, setFileCache] = useState<Map<string, File>>(new Map());
   
   useEffect(() => {
@@ -69,16 +80,17 @@ const Dashboard: React.FC = () => {
     loadCurrentFolder('root');
   }, [refreshTrigger]);
   
-  // Update upload progress periodically
+  useEffect(() => {
+    resetSelection();
+  }, [currentFolderId, resetSelection]);
+  
   useEffect(() => {
     const interval = setInterval(() => {
       const currentUploads = getUploadProgress();
       setUploadProgress(currentUploads);
       
-      // Check if any uploads completed since last check
       const completedUploads = currentUploads.filter(u => u.status === 'completed');
       if (completedUploads.length > 0 && currentUploads.every(u => u.status !== 'uploading')) {
-        // If all uploads are either completed or error, refresh the file list
         setRefreshTrigger(prev => prev + 1);
       }
     }, 500);
@@ -184,22 +196,17 @@ const Dashboard: React.FC = () => {
     
     setUploadingFile(true);
     
-    // Cache files for potential retry operations
     const newFileCache = new Map(fileCache);
     
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        // Store file in cache using a unique key
         const cacheKey = `${currentFolderId}_${file.name}_${Date.now()}`;
         newFileCache.set(cacheKey, file);
         
-        // Upload and process in background
         uploadFile(file, currentFolderId)
           .then(() => {
-            // Refresh the file list after all uploads
             if (i === files.length - 1) {
-              // Trigger a refresh
               setRefreshTrigger(prev => prev + 1);
             }
           })
@@ -252,12 +259,10 @@ const Dashboard: React.FC = () => {
   };
   
   const handleRetryUpload = async (uploadId: string) => {
-    // Find the file in our cache
     for (const [cacheKey, cachedFile] of fileCache.entries()) {
       if (cacheKey.includes(uploadId)) {
         try {
           await retryUpload(uploadId, cachedFile, currentFolderId);
-          // Auto-refresh when upload completed
           setRefreshTrigger(prev => prev + 1);
         } catch (error) {
           console.error('Retry failed:', error);
@@ -271,13 +276,11 @@ const Dashboard: React.FC = () => {
   
   const handleCancelUpload = (uploadId: string) => {
     cancelUpload(uploadId);
-    // Update the UI immediately
     setUploadProgress(getUploadProgress());
   };
   
   const handleClearCompletedUploads = () => {
     clearCompletedUploads();
-    // Update the UI immediately
     setUploadProgress(getUploadProgress());
   };
   
@@ -333,10 +336,17 @@ const Dashboard: React.FC = () => {
           onDeleteFile={handleDeleteFileClick}
           onDownloadFile={handleDownloadFile}
           onViewFile={handleViewFile}
+          selectionMode={selectionMode}
+          setSelectionMode={setSelectionMode}
+          selectedFiles={selectedFiles}
+          onSelectFile={handleSelectFile}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          onDeleteSelected={handleDeleteSelected}
+          onDownloadSelected={handleDownloadSelected}
         />
       </main>
       
-      {/* Upload Progress Component */}
       <UploadProgress
         uploads={uploadProgress}
         onRetry={handleRetryUpload}
