@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useDropbox } from '@/hooks/useDropbox';
@@ -7,7 +7,8 @@ import {
   UploadIcon, 
   FolderPlusIcon,
   ArrowLeftIcon,
-  Loader2Icon 
+  Loader2Icon,
+  XIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -16,6 +17,21 @@ import FolderGrid from '@/components/FolderGrid';
 import ImageGrid from '@/components/ImageGrid';
 import DropboxConnect from '@/components/DropboxConnect';
 import { toast } from 'sonner';
+import { 
+  Folder, 
+  ImageFile, 
+  initializeStorage, 
+  getFolders,
+  getFiles,
+  createFolder,
+  renameFolder,
+  deleteFolder,
+  uploadFile,
+  renameFile,
+  deleteFile,
+  downloadFile
+} from '@/utils/storage';
+import Modal from '@/components/Modal';
 
 const Dashboard: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();

@@ -1,42 +1,28 @@
 
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import * as dropboxService from '../services/dropboxService';
 
 export const useDropbox = () => {
-  const [isConnected, setIsConnected] = useState<boolean>(dropboxService.isConnected());
+  const [isConnected, setIsConnected] = useState<boolean>(
+    localStorage.getItem('localStorageEnabled') === 'true'
+  );
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // Check for redirect callback from Dropbox
-    const handleAuthRedirect = async () => {
-      if (window.location.search.includes('code=')) {
-        setIsConnecting(true);
-        const success = await dropboxService.handleRedirect();
-        setIsConnected(success);
-        setIsConnecting(false);
-      }
-    };
-
-    handleAuthRedirect();
-  }, []);
 
   const connectToDropbox = async () => {
     try {
-      const authUrl = dropboxService.getAuthUrl();
-      window.location.href = authUrl;
+      localStorage.setItem('localStorageEnabled', 'true');
+      setIsConnected(true);
+      toast.success('Local storage enabled successfully!');
     } catch (error) {
-      console.error('Error initiating Dropbox connection:', error);
-      toast.error('Failed to connect to Dropbox');
+      console.error('Error enabling local storage:', error);
+      toast.error('Failed to enable local storage');
     }
   };
 
   const disconnectFromDropbox = () => {
-    dropboxService.disconnectDropbox();
+    localStorage.setItem('localStorageEnabled', 'false');
     setIsConnected(false);
-    toast.success('Disconnected from Dropbox');
+    toast.success('Local storage disabled');
   };
 
   return {
