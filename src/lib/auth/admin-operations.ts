@@ -9,7 +9,7 @@ export const getAllUsers = async (): Promise<AuthUser[]> => {
   try {
     // Call the RPC function to get all users
     const { data, error } = await supabase
-      .rpc('get_all_users');
+      .rpc('get_all_users') as { data: any[] | null, error: any };
 
     if (error) {
       console.error('Error fetching users:', error);
@@ -43,7 +43,7 @@ export const getAllUsers = async (): Promise<AuthUser[]> => {
 export const adminDeleteUser = async (userId: string): Promise<boolean> => {
   try {
     const { error } = await supabase
-      .rpc('delete_user', { user_id: userId });
+      .rpc('delete_user', { user_id: userId }) as { data: any, error: any };
 
     if (error) {
       console.error('Error deleting user:', error);
@@ -63,7 +63,7 @@ export const adminDeleteUser = async (userId: string): Promise<boolean> => {
 export const adminDeleteAllUsers = async (exceptUserId: string): Promise<boolean> => {
   try {
     const { error } = await supabase
-      .rpc('delete_all_users', { except_user_id: exceptUserId });
+      .rpc('delete_all_users', { except_user_id: exceptUserId }) as { data: any, error: any };
 
     if (error) {
       console.error('Error deleting all users:', error);
