@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { AuthUser, mapUserToAuthUser } from './types';
+import { AuthUser } from './types';
 
 /**
  * Retrieves all users for admin purposes
@@ -17,7 +17,7 @@ export const getAllUsers = async (): Promise<AuthUser[]> => {
     }
 
     // Convert the raw user data to AuthUser objects
-    if (Array.isArray(data)) {
+    if (data && Array.isArray(data)) {
       const authUsers = data.map(user => {
         return {
           id: user.id,
