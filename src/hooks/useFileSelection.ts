@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { ImageFile, downloadFile, deleteFile } from '@/utils/storage';
 import { toast } from 'sonner';
 
@@ -8,7 +8,11 @@ export const useFileSelection = (files: ImageFile[], currentFolderId: string, re
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
 
-  // Clear selection when files change (e.g., navigating folders)
+  // Reset selection when folder changes instead of when files change
+  useEffect(() => {
+    resetSelection();
+  }, [currentFolderId]);
+
   const resetSelection = useCallback(() => {
     setSelectedFiles([]);
     setSelectionMode(false);

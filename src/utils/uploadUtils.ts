@@ -17,6 +17,8 @@ export {
   createProgressHandler
 } from './resumableUpload';
 export {
-  uploadFileToSupabase,
+  uploadFileToSupabase
+} from './uploadCore';
+export {
   retryUpload
-} from './fileUploader';
+} from './uploadRetry';

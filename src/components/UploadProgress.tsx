@@ -3,10 +3,17 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { X, RefreshCw, CheckCircle, AlertTriangle } from 'lucide-react';
-import { UploadProgress as UploadProgressType } from '@/utils/uploadUtils';
 
 interface UploadProgressProps {
-  uploads: UploadProgressType[];
+  uploads: Array<{
+    id: string;
+    fileName: string;
+    progress: number;
+    status: string;
+    bytesUploaded: number;
+    totalBytes: number;
+    error?: string;
+  }>;
   onRetry: (uploadId: string) => void;
   onCancel: (uploadId: string) => void;
   onClearCompleted: () => void;
