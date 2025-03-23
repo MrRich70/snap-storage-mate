@@ -1,10 +1,22 @@
-
 // Re-export all storage operations from the respective modules
 export * from './storageTypes';
 export * from './folderOperations';
-export * from './fileOperations';
-export * from './uploadTypes';
-export * from './uploadUtils';
+export { 
+  getFiles, 
+  renameFile, 
+  deleteFile, 
+  downloadFile, 
+  moveFiles, 
+  moveFile,
+  uploadFile as uploadLocalFile 
+} from './fileOperations';
+export {
+  getUploadProgress,
+  clearCompletedUploads,
+  cancelUpload,
+  retryUpload,
+  uploadToSupabase
+} from './uploadUtils';
 
 // Add initialization function for shared storage
 export const initializeStorage = (isSharedStorage = false) => {

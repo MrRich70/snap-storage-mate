@@ -20,17 +20,16 @@ import {
   createFolder,
   renameFolder,
   deleteFolder,
-  uploadFile,
+  uploadLocalFile,
   renameFile,
   deleteFile,
-  downloadFile
+  downloadFile,
+  getUploadProgress,
+  retryUpload,
+  cancelUpload,
+  clearCompletedUploads,
+  uploadToSupabase
 } from '@/utils/storage';
-import { 
-  getUploadProgress, 
-  retryUpload, 
-  cancelUpload, 
-  clearCompletedUploads 
-} from '@/utils/uploadUtils';
 
 const SHARED_ACCESS_CODE = 'servpro';
 
@@ -211,7 +210,7 @@ const Dashboard: React.FC = () => {
         const cacheKey = `${currentFolderId}_${file.name}_${Date.now()}`;
         newFileCache.set(cacheKey, file);
         
-        uploadFile(file, currentFolderId, isSharedStorage)
+        uploadLocalFile(file, currentFolderId, isSharedStorage)
           .then(() => {
             if (i === files.length - 1) {
               setRefreshTrigger(prev => prev + 1);
@@ -397,4 +396,3 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
-
