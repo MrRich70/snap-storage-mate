@@ -24,8 +24,9 @@ export const retryUpload = async (
   });
   
   try {
-    // Start a new upload with the same file
-    return await uploadFileToSupabase(file, folderId, isSharedStorage);
+    // Start a new upload with the same file and return the public URL
+    const publicUrl = await uploadFileToSupabase(file, folderId, isSharedStorage);
+    return publicUrl;
   } catch (error) {
     console.error('Retry failed:', error);
     const errorMessage = error instanceof Error ? error.message : 'Retry failed';

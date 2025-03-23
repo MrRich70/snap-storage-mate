@@ -1,5 +1,8 @@
+
 import { ImageFile } from './storageTypes';
 import { v4 as uuidv4 } from 'uuid';
+import { uploadToSupabase } from '@/utils/fileUploader';
+import { toast } from 'sonner';
 
 // Get all files in a folder
 export const getFiles = async (folderId: string, isSharedStorage = false): Promise<ImageFile[]> => {
@@ -19,14 +22,15 @@ export const uploadFile = async (file: File, folderId: string, isSharedStorage =
     const storageKey = isSharedStorage ? 'servpro_files' : 'files';
     const filesObj = JSON.parse(localStorage.getItem(storageKey) || '{}');
     
-    // Create a blob URL for the file
-    const url = URL.createObjectURL(file);
+    // Upload the file to Supabase and get the public URL
+    const fileId = uuidv4();
+    const url = await uploadToSupabase(file, folderId, isSharedStorage);
     
-    // Generate thumbnail (for demonstration, we use the same URL)
+    // Use the actual URL from Supabase, not a local blob URL
     const thumbnailUrl = url;
     
     const newFile: ImageFile = {
-      id: uuidv4(),
+      id: fileId,
       name: file.name,
       type: file.type,
       size: file.size,
