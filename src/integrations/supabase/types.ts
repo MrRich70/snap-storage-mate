@@ -38,9 +38,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      delete_user: {
-        Args: Record<PropertyKey, never>
+      confirm_user_email: {
+        Args: {
+          user_email: string
+        }
+        Returns: boolean
+      }
+      delete_all_users: {
+        Args: {
+          except_user_id: string
+        }
         Returns: undefined
+      }
+      delete_user:
+        | {
+            Args: Record<PropertyKey, never>
+            Returns: undefined
+          }
+        | {
+            Args: {
+              user_id: string
+            }
+            Returns: undefined
+          }
+      get_all_users: {
+        Args: Record<PropertyKey, never>
+        Returns: Json[]
       }
     }
     Enums: {
