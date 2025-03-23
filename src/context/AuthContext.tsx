@@ -7,18 +7,20 @@ import {
   signupWithPassword, 
   resetPasswordForEmail, 
   updateUserPassword, 
-  logoutUser 
+  logoutUser,
+  deleteUserAccount
 } from '@/lib/auth-utils';
 
 interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (name: string, email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string, accessCode: string) => Promise<boolean>;
+  signup: (name: string, email: string, password: string, accessCode: string) => Promise<boolean>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<boolean>;
   updatePassword: (password: string) => Promise<boolean>;
+  deleteAccount: (email: string, password: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,11 +32,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     user,
     isAuthenticated,
     isLoading,
-    login: async (email, password) => {
-      return await loginWithPassword(email, password);
+    login: async (email, password, accessCode) => {
+      return await loginWithPassword(email, password, accessCode);
     },
-    signup: async (name, email, password) => {
-      return await signupWithPassword(name, email, password);
+    signup: async (name, email, password, accessCode) => {
+      return await signupWithPassword(name, email, password, accessCode);
     },
     logout: async () => {
       await logoutUser();
@@ -44,6 +46,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     },
     updatePassword: async (password) => {
       return await updateUserPassword(password);
+    },
+    deleteAccount: async (email, password) => {
+      return await deleteUserAccount(email, password);
     }
   };
 

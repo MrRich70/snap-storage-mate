@@ -1,21 +1,23 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/context/AuthContext';
-import { LockIcon, MailIcon, UserIcon, ArrowLeftIcon } from 'lucide-react';
+import { LockIcon, MailIcon, UserIcon, ArrowLeftIcon, KeyIcon } from 'lucide-react';
 
-type AuthMode = 'login' | 'signup' | 'forgot-password';
+type AuthMode = 'login' | 'signup' | 'forgot-password' | 'delete-account';
 
 const AuthForm: React.FC = () => {
   const [mode, setMode] = useState<AuthMode>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [accessCode, setAccessCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { login, signup, resetPassword } = useAuth();
+  const { login, signup, resetPassword, deleteAccount } = useAuth();
   
   const toggleMode = (newMode: AuthMode) => {
     setMode(newMode);
@@ -24,6 +26,7 @@ const AuthForm: React.FC = () => {
     if (newMode !== 'forgot-password') {
       setEmail('');
     }
+    setAccessCode('');
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,14 +39,19 @@ const AuthForm: React.FC = () => {
     
     try {
       if (mode === 'login') {
-        success = await login(email, password);
+        success = await login(email, password, accessCode);
       } else if (mode === 'signup') {
         if (!name.trim()) {
           throw new Error('Name is required');
         }
-        success = await signup(name, email, password);
+        success = await signup(name, email, password, accessCode);
       } else if (mode === 'forgot-password') {
         success = await resetPassword(email);
+        if (success) {
+          setTimeout(() => toggleMode('login'), 2000);
+        }
+      } else if (mode === 'delete-account') {
+        success = await deleteAccount(email, password);
         if (success) {
           setTimeout(() => toggleMode('login'), 2000);
         }
@@ -67,14 +75,18 @@ const AuthForm: React.FC = () => {
             ? 'Sign In' 
             : mode === 'signup' 
               ? 'Create Account' 
-              : 'Reset Password'}
+              : mode === 'forgot-password'
+                ? 'Reset Password'
+                : 'Delete Account'}
         </CardTitle>
         <CardDescription>
           {mode === 'login'
             ? 'Enter your credentials to access your account'
             : mode === 'signup'
               ? 'Fill in the information to create your account'
-              : 'Enter your email to receive a password reset link'}
+              : mode === 'forgot-password'
+                ? 'Enter your email to receive a password reset link'
+                : 'Confirm your details to permanently delete your account'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -143,6 +155,24 @@ const AuthForm: React.FC = () => {
             </div>
           )}
           
+          {(mode === 'login' || mode === 'signup') && (
+            <div className="space-y-2">
+              <Label htmlFor="accessCode">Access Code</Label>
+              <div className="relative">
+                <KeyIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  id="accessCode"
+                  type="text"
+                  placeholder="Enter access code"
+                  value={accessCode}
+                  onChange={(e) => setAccessCode(e.target.value)}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+          )}
+          
           <Button 
             type="submit" 
             className="w-full mt-6" 
@@ -154,13 +184,15 @@ const AuthForm: React.FC = () => {
                 ? 'Sign In' 
                 : mode === 'signup'
                   ? 'Create Account'
-                  : 'Send Reset Link'
+                  : mode === 'forgot-password'
+                    ? 'Send Reset Link'
+                    : 'Delete Account'
             }
           </Button>
         </form>
       </CardContent>
       <CardFooter className="flex flex-col space-y-4 text-center">
-        {mode === 'forgot-password' ? (
+        {mode === 'forgot-password' || mode === 'delete-account' ? (
           <div className="text-sm text-muted-foreground">
             <Button 
               onClick={() => toggleMode('login')}
@@ -184,6 +216,19 @@ const AuthForm: React.FC = () => {
             >
               {mode === 'login' ? 'Sign Up' : 'Sign In'}
             </button>
+          </div>
+        )}
+        
+        {mode === 'login' && (
+          <div className="text-sm text-muted-foreground">
+            <Button
+              onClick={() => toggleMode('delete-account')}
+              className="text-destructive text-sm font-medium hover:text-destructive/80"
+              variant="link"
+              type="button"
+            >
+              Delete Account
+            </Button>
           </div>
         )}
       </CardFooter>

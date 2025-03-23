@@ -50,7 +50,19 @@ const Index = () => {
                 </svg>
                 Access your files from any device
               </li>
+              <li className="flex items-center">
+                <svg className="h-5 w-5 mr-2 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Collaborate with team members using access codes
+              </li>
             </ul>
+            <div className="mt-4 p-4 bg-muted rounded-lg">
+              <p className="text-sm font-medium">Team Access Code: servpro</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Use this code to sign up or log in to collaborate on shared image collections.
+              </p>
+            </div>
           </div>
           
           <div className="animate-slide-up animation-delay-200">

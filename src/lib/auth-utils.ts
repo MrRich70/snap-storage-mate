@@ -1,4 +1,3 @@
-
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -7,20 +6,40 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
+  accessCode?: string;
 }
 
-export const mapUserToAuthUser = (user: User | null, metadata?: { name?: string }): AuthUser | null => {
+export const mapUserToAuthUser = (user: User | null, metadata?: { name?: string; accessCode?: string }): AuthUser | null => {
   if (!user) return null;
   
   return {
     id: user.id,
     email: user.email || '',
-    name: metadata?.name || user.user_metadata.name || ''
+    name: metadata?.name || user.user_metadata.name || '',
+    accessCode: metadata?.accessCode || user.user_metadata.accessCode || ''
   };
 };
 
-export const loginWithPassword = async (email: string, password: string): Promise<boolean> => {
+export const loginWithPassword = async (
+  email: string, 
+  password: string, 
+  accessCode: string
+): Promise<boolean> => {
   try {
+    // Validate access code
+    if (!accessCode) {
+      toast.error('Access code is required');
+      return false;
+    }
+
+    // Default code "servpro" is always allowed 
+    if (accessCode.toLowerCase() !== 'servpro') {
+      // In a real implementation, we'd check the access code against a database
+      // For now, we'll just check if it matches our default code
+      toast.error('Invalid access code');
+      return false;
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -32,6 +51,11 @@ export const loginWithPassword = async (email: string, password: string): Promis
     }
     
     if (data.user) {
+      // Store the access code in user metadata
+      await supabase.auth.updateUser({
+        data: { accessCode }
+      });
+
       toast.success('Successfully logged in');
       return true;
     } else {
@@ -48,15 +72,29 @@ export const loginWithPassword = async (email: string, password: string): Promis
 export const signupWithPassword = async (
   name: string, 
   email: string, 
-  password: string
+  password: string,
+  accessCode: string
 ): Promise<boolean> => {
   try {
+    // Validate access code
+    if (!accessCode) {
+      toast.error('Access code is required');
+      return false;
+    }
+
+    // Default code "servpro" is always allowed
+    if (accessCode.toLowerCase() !== 'servpro') {
+      toast.error('Invalid access code');
+      return false;
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          name
+          name,
+          accessCode
         },
       }
     });
@@ -138,5 +176,40 @@ export const logoutUser = async (): Promise<void> => {
   } catch (error) {
     console.error('Logout error:', error);
     toast.error('Logout failed');
+  }
+};
+
+export const deleteUserAccount = async (email: string, password: string): Promise<boolean> => {
+  try {
+    // First verify the credentials
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+    
+    if (signInError || !signInData.user) {
+      toast.error('Invalid credentials. Account deletion failed.');
+      return false;
+    }
+    
+    // Delete the user's account
+    const { error } = await supabase.auth.admin.deleteUser(signInData.user.id);
+    
+    if (error) {
+      console.error('Account deletion error:', error);
+      toast.error(`Account deletion failed: ${error.message}`);
+      return false;
+    }
+    
+    toast.success('Your account has been permanently deleted.');
+    
+    // Force logout after account deletion
+    await supabase.auth.signOut();
+    
+    return true;
+  } catch (error) {
+    console.error('Account deletion error:', error);
+    toast.error('Account deletion failed due to an unexpected error.');
+    return false;
   }
 };
