@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -8,13 +8,47 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LockIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const PasswordResetForm: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [tokenVerified, setTokenVerified] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { updatePassword } = useAuth();
+  
+  // Check for recovery token on component mount
+  useEffect(() => {
+    const checkRecoveryToken = async () => {
+      try {
+        // The token is in the URL hash
+        if (location.hash) {
+          console.log('Recovery token found in URL');
+          const { data, error } = await supabase.auth.getUser();
+          
+          if (error) {
+            console.error('Error verifying recovery token:', error);
+            toast.error('Password reset link is invalid or has expired. Please request a new one.');
+            setTimeout(() => navigate('/'), 3000);
+            return;
+          }
+          
+          if (data.user) {
+            setTokenVerified(true);
+            toast.success('Please enter your new password');
+          }
+        }
+      } catch (error) {
+        console.error('Error during token verification:', error);
+        toast.error('An error occurred. Please try again or request a new password reset link.');
+        setTimeout(() => navigate('/'), 3000);
+      }
+    };
+    
+    checkRecoveryToken();
+  }, [location.hash, navigate]);
   
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +70,7 @@ const PasswordResetForm: React.FC = () => {
       
       if (success) {
         toast.success('Password updated successfully');
-        setTimeout(() => navigate('/'), 1000); // Redirect to login page
+        setTimeout(() => navigate('/'), 2000); // Redirect to login page
       }
     } catch (error) {
       console.error('Error resetting password:', error);
@@ -45,6 +79,22 @@ const PasswordResetForm: React.FC = () => {
       setIsLoading(false);
     }
   };
+  
+  if (!tokenVerified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/30 p-4">
+        <Card className="w-full max-w-md mx-auto animate-zoom-in">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-2xl font-bold">Verifying Reset Link</CardTitle>
+            <CardDescription>Please wait while we verify your password reset link</CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center p-6">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/30 p-4">

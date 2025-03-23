@@ -20,11 +20,18 @@ const AuthCallback = () => {
   
   useEffect(() => {
     const handleAuthCallback = async () => {
+      // Check URL parameters and hash for type
       const searchParams = new URLSearchParams(location.search);
       const type = searchParams.get('type');
       
+      // Also check the URL hash for recovery tokens
+      // This is crucial for password reset links which use hash-based tokens
+      const hash = location.hash;
+      const isRecovery = hash.includes('type=recovery') || type === 'recovery';
+      
       try {
-        if (type === 'recovery') {
+        if (isRecovery) {
+          console.log('Processing password reset request');
           // This is a password reset
           setIsPasswordReset(true);
           setIsProcessing(false);
@@ -65,7 +72,7 @@ const AuthCallback = () => {
     };
     
     handleAuthCallback();
-  }, [location.search, navigate, isAuthenticated]);
+  }, [location.search, location.hash, navigate, isAuthenticated]);
   
   // Show loading spinner while processing
   if (isProcessing) {
