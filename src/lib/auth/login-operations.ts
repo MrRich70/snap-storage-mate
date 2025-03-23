@@ -26,8 +26,13 @@ export const loginWithPassword = async (
       toast.error('Invalid access code');
       return false;
     }
-
-    // First attempt to login normally
+    
+    // First try to confirm email if it's not already confirmed
+    // This preemptive approach should help with persistent email confirmation issues
+    await confirmUserEmail(email);
+    console.log('Preemptively attempted to confirm email for:', email);
+    
+    // Now attempt login
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -44,11 +49,12 @@ export const loginWithPassword = async (
       return true;
     }
     
-    // If there's an error about unconfirmed email, try to confirm it
+    // If there's an error about unconfirmed email, try again with an explicit confirmation
     if (error && error.message.includes('Email not confirmed')) {
-      console.log('Attempting to auto-confirm email for:', email);
+      console.log('Still getting email not confirmed error, retrying with explicit confirmation for:', email);
       
       const confirmed = await confirmUserEmail(email);
+      console.log('Explicit email confirmation result:', confirmed);
       
       if (confirmed) {
         // Try logging in again after confirming the email
@@ -66,11 +72,12 @@ export const loginWithPassword = async (
           toast.success('Email confirmed and logged in successfully');
           return true;
         } else {
+          console.error('Second login attempt failed:', secondAttempt.error);
           toast.error(secondAttempt.error?.message || 'Login failed after email confirmation');
           return false;
         }
       } else {
-        toast.error(error.message);
+        toast.error('Could not confirm email. Please contact support.');
         return false;
       }
     } else if (error) {
