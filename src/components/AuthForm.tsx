@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/context/AuthContext';
-import { LockIcon, MailIcon, UserIcon, ArrowLeftIcon, KeyIcon } from 'lucide-react';
+import LoginForm from './auth/LoginForm';
+import SignupForm from './auth/SignupForm';
+import ForgotPasswordForm from './auth/ForgotPasswordForm';
+import FormFooter from './auth/FormFooter';
 
 type AuthMode = 'login' | 'signup' | 'forgot-password';
 
@@ -87,138 +87,49 @@ const AuthForm: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {loginError && (
-            <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-md text-sm">
-              {loginError}
-            </div>
-          )}
-          
-          {mode === 'signup' && (
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <div className="relative">
-                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  id="name"
-                  placeholder="John Doe"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-          )}
-          
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <div className="relative">
-              <MailIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-10"
-                required
-              />
-            </div>
-          </div>
-          
-          {mode !== 'forgot-password' && (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label htmlFor="password">Password</Label>
-                {mode === 'login' && (
-                  <Button 
-                    type="button" 
-                    variant="link" 
-                    className="px-0 text-xs" 
-                    onClick={() => toggleMode('forgot-password')}
-                  >
-                    Forgot password?
-                  </Button>
-                )}
-              </div>
-              <div className="relative">
-                <LockIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
-                  required
-                  minLength={6}
-                />
-              </div>
-            </div>
-          )}
-          
-          {(mode === 'login' || mode === 'signup') && (
-            <div className="space-y-2">
-              <Label htmlFor="accessCode">Access Code</Label>
-              <div className="relative">
-                <KeyIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  id="accessCode"
-                  type="text"
-                  placeholder="Enter access code"
-                  value={accessCode}
-                  onChange={(e) => setAccessCode(e.target.value)}
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-          )}
-          
-          <Button 
-            type="submit" 
-            className="w-full mt-6" 
-            disabled={isSubmitting}
-          >
-            {isSubmitting 
-              ? 'Processing...' 
-              : mode === 'login' 
-                ? 'Sign In' 
-                : mode === 'signup'
-                  ? 'Create Account'
-                  : 'Send Reset Link'
-            }
-          </Button>
-        </form>
+        {mode === 'login' && (
+          <LoginForm
+            email={email}
+            setEmail={setEmail}
+            password={password}
+            setPassword={setPassword}
+            accessCode={accessCode}
+            setAccessCode={setAccessCode}
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+            error={loginError}
+            onForgotPassword={() => toggleMode('forgot-password')}
+          />
+        )}
+        
+        {mode === 'signup' && (
+          <SignupForm
+            name={name}
+            setName={setName}
+            email={email}
+            setEmail={setEmail}
+            password={password}
+            setPassword={setPassword}
+            accessCode={accessCode}
+            setAccessCode={setAccessCode}
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+            error={loginError}
+          />
+        )}
+        
+        {mode === 'forgot-password' && (
+          <ForgotPasswordForm
+            email={email}
+            setEmail={setEmail}
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+            error={loginError}
+          />
+        )}
       </CardContent>
       <CardFooter className="flex flex-col space-y-4 text-center">
-        {mode === 'forgot-password' ? (
-          <div className="text-sm text-muted-foreground">
-            <Button 
-              onClick={() => toggleMode('login')}
-              className="flex items-center gap-1 text-primary text-sm font-medium hover:text-primary/80"
-              variant="link"
-              type="button"
-            >
-              <ArrowLeftIcon className="h-3 w-3" />
-              Back to login
-            </Button>
-          </div>
-        ) : (
-          <div className="text-sm text-muted-foreground">
-            {mode === 'login' 
-              ? "Don't have an account?" 
-              : "Already have an account?"}
-            <button 
-              onClick={() => toggleMode(mode === 'login' ? 'signup' : 'login')}
-              className="ml-1 underline text-primary font-medium hover:text-primary/80"
-              type="button"
-            >
-              {mode === 'login' ? 'Sign Up' : 'Sign In'}
-            </button>
-          </div>
-        )}
+        <FormFooter mode={mode} toggleMode={toggleMode} />
       </CardFooter>
     </Card>
   );
