@@ -74,7 +74,7 @@ const Navigation: React.FC<NavigationProps> = ({ onUpload }) => {
               className="flex items-center gap-1"
               onClick={() => setIsDeleteAccountOpen(true)}
             >
-              <UserIcon className="h-4 w-4" />
+              <TrashIcon className="h-4 w-4" />
               <span className="hidden sm:inline">Delete Account</span>
             </Button>
             

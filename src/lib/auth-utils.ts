@@ -1,3 +1,4 @@
+
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -193,30 +194,10 @@ export const deleteUserAccount = async (email: string, password: string): Promis
       return false;
     }
     
-    // Instead of using admin.deleteUser which requires admin privileges,
-    // we'll use the client-side method to delete the user's own account
-    const { error } = await supabase.auth.admin.deleteUser(signInData.user.id);
+    // Use the direct RPC call to delete_user function
+    const { error } = await supabase.rpc('delete_user');
     
     if (error) {
-      // If we get an admin role error, try the standard way to delete the account
-      if (error.message.includes('roles: supabase_admin, service_role')) {
-        // Use the user session to delete their own account
-        const { error: deleteError } = await supabase.rpc('delete_user');
-        
-        if (deleteError) {
-          console.error('Client-side account deletion error:', deleteError);
-          toast.error(`Account deletion failed: ${deleteError.message}`);
-          return false;
-        }
-        
-        toast.success('Your account has been permanently deleted.');
-        
-        // Force logout after account deletion
-        await supabase.auth.signOut();
-        
-        return true;
-      }
-      
       console.error('Account deletion error:', error);
       toast.error(`Account deletion failed: ${error.message}`);
       return false;
