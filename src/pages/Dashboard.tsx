@@ -64,7 +64,7 @@ const Dashboard: React.FC = () => {
           onDeselectAll={dashboard.handleDeselectAll}
           onDeleteSelected={dashboard.handleDeleteSelected}
           onDownloadSelected={dashboard.handleDownloadSelected}
-          onMoveSelected={dashboard.handleMoveSelected}
+          onMoveSelected={() => dashboard.setMoveModalOpen(true)} // Fixed to pass a function that takes no parameters
           moveModalOpen={dashboard.moveModalOpen}
           setMoveModalOpen={dashboard.setMoveModalOpen}
           currentFolderId={dashboard.currentFolderId}

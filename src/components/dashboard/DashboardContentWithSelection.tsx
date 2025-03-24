@@ -1,3 +1,4 @@
+
 import React from 'react';
 import FolderGrid from '@/components/FolderGrid';
 import ImageGrid from '@/components/ImageGrid';
@@ -27,7 +28,7 @@ interface DashboardContentWithSelectionProps {
   onDeselectAll: () => void;
   onDeleteSelected: () => void;
   onDownloadSelected: () => void;
-  onMoveSelected: () => void;
+  onMoveSelected: () => void; // Changed to accept no parameters
   moveModalOpen: boolean;
   setMoveModalOpen: (open: boolean) => void;
   currentFolderId: string;

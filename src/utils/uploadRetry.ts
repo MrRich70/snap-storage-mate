@@ -78,7 +78,7 @@ export const retryUpload = async (
       }
     }, 500);
 
-    // Upload to Supabase using the renamed function
+    // Upload to Supabase
     await handleFileUpload(file, folderId, userId);
     
     clearInterval(progressInterval);

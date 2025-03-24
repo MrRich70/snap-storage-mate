@@ -69,7 +69,7 @@ export const useSelectionOperations = (
     }
   }, [selectedFiles, files]);
   
-  // Move selected files
+  // Move selected files - note: this is called from the modal after target folder is selected
   const handleMoveSelected = useCallback(async (targetFolderId: string) => {
     try {
       await moveFiles(selectedFiles, currentFolderId, targetFolderId);
