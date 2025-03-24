@@ -44,11 +44,16 @@ export const setupRealtimeSync = (
  */
 export const broadcastFolderChanged = async () => {
   console.log('Broadcasting folder_changed event');
-  await supabase.channel('storage-changes').send({
-    type: 'broadcast',
-    event: 'folder_changed',
-    payload: { timestamp: new Date().toISOString() }
-  });
+  const timestamp = new Date().toISOString();
+  try {
+    await supabase.channel('storage-changes').send({
+      type: 'broadcast',
+      event: 'folder_changed',
+      payload: { timestamp }
+    });
+  } catch (error) {
+    console.error('Error broadcasting folder change:', error);
+  }
 };
 
 /**
@@ -57,9 +62,14 @@ export const broadcastFolderChanged = async () => {
  */
 export const broadcastFileChanged = async (folderId: string) => {
   console.log('Broadcasting file_changed event for folder:', folderId);
-  await supabase.channel('storage-changes').send({
-    type: 'broadcast',
-    event: 'file_changed',
-    payload: { folderId, timestamp: new Date().toISOString() }
-  });
+  const timestamp = new Date().toISOString();
+  try {
+    await supabase.channel('storage-changes').send({
+      type: 'broadcast',
+      event: 'file_changed',
+      payload: { folderId, timestamp }
+    });
+  } catch (error) {
+    console.error('Error broadcasting file change:', error);
+  }
 };

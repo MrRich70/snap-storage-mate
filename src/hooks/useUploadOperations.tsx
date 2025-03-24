@@ -8,6 +8,7 @@ import {
   clearCompletedUploads,
   getUploadProgress
 } from '@/utils/storage';
+import { broadcastFileChanged } from '@/utils/realtimeSync';
 
 export const useUploadOperations = (
   currentFolderId: string, 
@@ -43,12 +44,17 @@ export const useUploadOperations = (
     const uploadPromises = [];
     
     try {
+      // Process each file individually
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const cacheKey = `${currentFolderId}_${file.name}_${Date.now()}`;
         newFileCache.set(cacheKey, file);
         
         const uploadPromise = uploadLocalFile(file, currentFolderId, SHARED_STORAGE)
+          .then(() => {
+            // Broadcast each file change individually
+            broadcastFileChanged(currentFolderId);
+          })
           .catch((error) => {
             console.error('Upload error:', error);
             toast.error(`Failed to upload ${file.name}`);
@@ -59,8 +65,10 @@ export const useUploadOperations = (
       
       setFileCache(newFileCache);
       
+      // Wait for all uploads to complete
       Promise.all(uploadPromises)
         .then(() => {
+          // Load files only once after all uploads are complete
           loadFiles();
           toast.success(`${files.length} file(s) uploaded successfully`);
         })
@@ -90,6 +98,8 @@ export const useUploadOperations = (
       if (cacheKey.includes(uploadId)) {
         try {
           await retryUpload(uploadId, cachedFile, currentFolderId, SHARED_STORAGE);
+          // Broadcast file change
+          broadcastFileChanged(currentFolderId);
           setRefreshTrigger(prev => prev + 1);
           return;
         } catch (error) {
