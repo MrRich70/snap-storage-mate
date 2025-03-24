@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useEffect } from 'react';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { 
   AuthUser, 
@@ -15,6 +15,7 @@ import {
   confirmUserEmail,
   adminCreateUser
 } from '@/lib/auth';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -57,7 +58,18 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { user, isLoading, isAuthenticated } = useAuthSession();
+  const { user, isLoading, isAuthenticated, session } = useAuthSession();
+  
+  // Log user authentication status changes for debugging
+  useEffect(() => {
+    console.log('Auth status changed:', { 
+      isAuthenticated, 
+      isLoading, 
+      userId: user?.id,
+      email: user?.email,
+      sessionStatus: session ? 'active' : 'none'
+    });
+  }, [isAuthenticated, isLoading, user, session]);
   
   const authContextValue: AuthContextType = {
     user,
@@ -66,38 +78,104 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isAdmin: user?.isAdmin || false,
     accessCode: user?.accessCode || null,
     login: async (email, password, accessCode) => {
-      return await loginWithPassword(email, password, accessCode);
+      try {
+        return await loginWithPassword(email, password, accessCode);
+      } catch (error) {
+        console.error('Login error in context:', error);
+        toast.error('Login failed. Please try again.');
+        return false;
+      }
     },
     signup: async (name, email, password, accessCode) => {
-      return await signupWithPassword(name, email, password, accessCode);
+      try {
+        return await signupWithPassword(name, email, password, accessCode);
+      } catch (error) {
+        console.error('Signup error in context:', error);
+        toast.error('Signup failed. Please try again.');
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+      }
     },
     logout: async () => {
-      await logoutUser();
+      try {
+        console.log('Logging out from auth context');
+        await logoutUser();
+      } catch (error) {
+        console.error('Logout error in context:', error);
+        toast.error('Logout failed. Please try again.');
+      }
     },
     resetPassword: async (email) => {
-      return await resetPasswordForEmail(email);
+      try {
+        return await resetPasswordForEmail(email);
+      } catch (error) {
+        console.error('Reset password error in context:', error);
+        toast.error('Failed to reset password. Please try again.');
+        return false;
+      }
     },
     updatePassword: async (password) => {
-      return await updateUserPassword(password);
+      try {
+        return await updateUserPassword(password);
+      } catch (error) {
+        console.error('Update password error in context:', error);
+        toast.error('Failed to update password. Please try again.');
+        return false;
+      }
     },
     deleteAccount: async (email, password) => {
-      return await deleteUserAccount(email, password);
+      try {
+        return await deleteUserAccount(email, password);
+      } catch (error) {
+        console.error('Delete account error in context:', error);
+        toast.error('Failed to delete account. Please try again.');
+        return false;
+      }
     },
     // Admin functions
     fetchAllUsers: async () => {
-      return await getAllUsers();
+      try {
+        return await getAllUsers();
+      } catch (error) {
+        console.error('Fetch all users error in context:', error);
+        toast.error('Failed to fetch users. Please try again.');
+        return [];
+      }
     },
     deleteUser: async (userId) => {
-      return await adminDeleteUser(userId);
+      try {
+        return await adminDeleteUser(userId);
+      } catch (error) {
+        console.error('Delete user error in context:', error);
+        toast.error('Failed to delete user. Please try again.');
+        return false;
+      }
     },
     deleteAllUsers: async (exceptUserId) => {
-      return await adminDeleteAllUsers(exceptUserId);
+      try {
+        return await adminDeleteAllUsers(exceptUserId);
+      } catch (error) {
+        console.error('Delete all users error in context:', error);
+        toast.error('Failed to delete all users. Please try again.');
+        return false;
+      }
     },
     confirmEmail: async (email) => {
-      return await confirmUserEmail(email);
+      try {
+        return await confirmUserEmail(email);
+      } catch (error) {
+        console.error('Confirm email error in context:', error);
+        toast.error('Failed to confirm email. Please try again.');
+        return false;
+      }
     },
     createUser: async (name, email, password, accessCode) => {
-      return await adminCreateUser(name, email, password, accessCode);
+      try {
+        return await adminCreateUser(name, email, password, accessCode);
+      } catch (error) {
+        console.error('Create user error in context:', error);
+        toast.error('Failed to create user. Please try again.');
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+      }
     }
   };
 

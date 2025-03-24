@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { 
@@ -13,6 +13,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
 interface NavigationProps {
   onUpload?: () => void;
@@ -24,9 +25,20 @@ const Navigation: React.FC<NavigationProps> = ({ onUpload }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
   
   const handleLogout = async () => {
-    await logout();
+    setIsSubmitting(true);
+    try {
+      await logout();
+      // Force navigation to home page after logout
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to log out. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -37,9 +49,11 @@ const Navigation: React.FC<NavigationProps> = ({ onUpload }) => {
       const success = await deleteAccount(email, password);
       if (success) {
         setIsDeleteAccountOpen(false);
+        navigate('/', { replace: true });
       }
     } catch (error) {
       console.error('Delete account error:', error);
+      toast.error('Failed to delete account. Please try again.');
     } finally {
       setIsSubmitting(false);
       setPassword('');
@@ -96,9 +110,12 @@ const Navigation: React.FC<NavigationProps> = ({ onUpload }) => {
               size="sm"
               className="flex items-center gap-1"
               onClick={handleLogout}
+              disabled={isSubmitting}
             >
               <LogOutIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Logout</span>
+              <span className="hidden sm:inline">
+                {isSubmitting ? 'Logging out...' : 'Logout'}
+              </span>
             </Button>
           </div>
         </div>

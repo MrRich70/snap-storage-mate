@@ -14,7 +14,15 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import AdminPage from "./pages/Admin";
 
-const queryClient = new QueryClient();
+// Create a new query client with improved error handling
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // Component to handle redirects from query parameters
 const RouteHandler = () => {
@@ -28,6 +36,7 @@ const RouteHandler = () => {
     
     if (redirectPath && redirectPath !== '/') {
       // Remove the query parameter and navigate to the path
+      console.log('Redirecting to:', redirectPath);
       navigate(redirectPath, { replace: true });
     }
   }, [location, navigate]);

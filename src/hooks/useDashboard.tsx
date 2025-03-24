@@ -13,7 +13,7 @@ import { setupRealtimeSync } from '@/utils/realtimeSync';
 const SHARED_STORAGE = true;
 
 export const useDashboard = () => {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const navigate = useNavigate();
   
   // Core state
@@ -30,13 +30,17 @@ export const useDashboard = () => {
   // Authentication check
   useEffect(() => {
     if (!isAuthenticated && !authLoading) {
-      navigate('/');
+      console.log('User not authenticated, redirecting to home');
+      navigate('/', { replace: true });
     }
   }, [isAuthenticated, navigate, authLoading]);
   
   // Initialize storage and load current folder
   useEffect(() => {
     const loadData = async () => {
+      if (!isAuthenticated || !user) return;
+      
+      console.log('Loading dashboard data for user:', user.email);
       setIsLoading(true);
       try {
         initializeStorage(SHARED_STORAGE);
@@ -51,12 +55,14 @@ export const useDashboard = () => {
     };
     
     loadData();
-  }, [refreshTrigger, currentFolderId]);
+  }, [refreshTrigger, currentFolderId, isAuthenticated, user]);
 
   // Setup real-time sync
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
 
+    console.log('Setting up real-time sync for user:', user.email);
+    
     const handleFoldersChanged = () => {
       console.log('Folders changed, refreshing folder list');
       folderOperations.loadFolders();
@@ -75,7 +81,7 @@ export const useDashboard = () => {
     );
 
     return cleanup;
-  }, [isAuthenticated, currentFolderId]);
+  }, [isAuthenticated, currentFolderId, user]);
   
   // Reset selection when folder changes
   useEffect(() => {
@@ -83,6 +89,7 @@ export const useDashboard = () => {
   }, [currentFolderId]);
   
   const handleRefresh = useCallback(() => {
+    console.log('Manual refresh triggered');
     setRefreshTrigger(prev => prev + 1);
     toast.success('Refreshed content');
   }, []);

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { isValidAccessCode } from './types';
@@ -99,7 +98,28 @@ export const loginWithPassword = async (
  */
 export const logoutUser = async (): Promise<void> => {
   try {
-    await supabase.auth.signOut();
+    console.log('Logging out user...');
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      console.error('Logout error:', error);
+      toast.error('Logout failed: ' + error.message);
+      return;
+    }
+    
+    // Clear any local storage items that might be keeping state
+    localStorage.removeItem('supabase.auth.token');
+    
+    // Also clear any application specific storage
+    const sharedStorageItems = Object.keys(localStorage).filter(key => 
+      key.startsWith('servpro_')
+    );
+    
+    sharedStorageItems.forEach(key => {
+      localStorage.removeItem(key);
+    });
+    
+    console.log('User logged out successfully');
     toast.info('You have been logged out');
   } catch (error) {
     console.error('Logout error:', error);

@@ -17,8 +17,8 @@ export const setupRealtimeSync = (
   
   // Create a channel for listening to changes
   const channel = supabase.channel('storage-changes')
-    .on('broadcast', { event: 'folder_changed' }, () => {
-      console.log('Received folder_changed event');
+    .on('broadcast', { event: 'folder_changed' }, (payload) => {
+      console.log('Received folder_changed event', payload);
       onFoldersChanged();
     })
     .on('broadcast', { event: 'file_changed' }, (payload) => {
@@ -47,7 +47,7 @@ export const broadcastFolderChanged = async () => {
   await supabase.channel('storage-changes').send({
     type: 'broadcast',
     event: 'folder_changed',
-    payload: {}
+    payload: { timestamp: new Date().toISOString() }
   });
 };
 
@@ -60,6 +60,6 @@ export const broadcastFileChanged = async (folderId: string) => {
   await supabase.channel('storage-changes').send({
     type: 'broadcast',
     event: 'file_changed',
-    payload: { folderId }
+    payload: { folderId, timestamp: new Date().toISOString() }
   });
 };

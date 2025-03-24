@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import EmailVerificationStatus from '@/components/auth/EmailVerificationStatus';
 import PasswordResetForm from '@/components/auth/PasswordResetForm';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { toast } from 'sonner';
 
 const AuthCallback = () => {
   const [isPasswordReset, setIsPasswordReset] = useState(false);
@@ -20,6 +21,8 @@ const AuthCallback = () => {
   
   useEffect(() => {
     const handleAuthCallback = async () => {
+      console.log('Auth callback processing with URL:', location.pathname + location.search + location.hash);
+      
       // Check URL parameters and hash for type
       const searchParams = new URLSearchParams(location.search);
       const type = searchParams.get('type');
@@ -42,7 +45,7 @@ const AuthCallback = () => {
         
         // Handle token from email verification link if present
         if (token && isSignup) {
-          console.log('Processing email verification');
+          console.log('Processing email verification with token');
           // Let's improve token handling
           const { error } = await supabase.auth.verifyOtp({
             token_hash: token,
@@ -57,20 +60,24 @@ const AuthCallback = () => {
           // Successfully verified email
           setVerificationStatus('success');
           setVerificationMessage('Your email has been successfully verified! You can now log in to your account.');
+          toast.success('Email verified successfully');
           
           // Delay redirecting to give time to read the message
           setTimeout(() => {
-            navigate('/');
+            navigate('/', { replace: true });
           }, 3000);
           return;
         }
         
         // Handle general auth callback (like after auth.signIn with email verification)
-        const { error } = await supabase.auth.getSession();
+        const { data, error } = await supabase.auth.getSession();
         
         if (error) {
+          console.error('Error getting session:', error);
           throw error;
         }
+        
+        console.log('Auth callback session check result:', data.session?.user?.email);
         
         // Default success case
         setVerificationStatus('success');
@@ -78,20 +85,21 @@ const AuthCallback = () => {
         
         // Delay redirecting to give time to read the message
         setTimeout(() => {
-          if (isAuthenticated) {
-            navigate('/dashboard');
+          if (isAuthenticated || data.session) {
+            navigate('/dashboard', { replace: true });
           } else {
-            navigate('/');
+            navigate('/', { replace: true });
           }
         }, 3000);
       } catch (error: any) {
         console.error('Error handling auth callback:', error);
         setVerificationStatus('error');
-        setVerificationMessage('Authentication failed. Please try again or contact support.');
+        setVerificationMessage('Authentication failed: ' + (error.message || 'Unknown error'));
+        toast.error('Authentication failed');
         
         // Delay redirecting to give time to read the error
         setTimeout(() => {
-          navigate('/');
+          navigate('/', { replace: true });
         }, 3000);
       } finally {
         setIsProcessing(false);
@@ -99,7 +107,7 @@ const AuthCallback = () => {
     };
     
     handleAuthCallback();
-  }, [location.search, location.hash, navigate, isAuthenticated]);
+  }, [location.search, location.hash, navigate, isAuthenticated, location.pathname]);
   
   // Show loading spinner while processing
   if (isProcessing) {
