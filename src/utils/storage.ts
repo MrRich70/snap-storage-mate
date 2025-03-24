@@ -8,7 +8,7 @@ export {
   downloadFile, 
   moveFiles, 
   moveFile,
-  uploadLocalFile 
+  uploadFile 
 } from './fileOperations';
 export {
   getUploadProgress,

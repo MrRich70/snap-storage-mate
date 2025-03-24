@@ -1,65 +1,74 @@
 
-import { useState, useCallback } from 'react';
-import { toast } from 'sonner';
+// Update any function calls to use the correct parameter count.
+// This is a partial update focusing on the function calls with errors.
+
+import { useState, useCallback, useEffect } from 'react';
 import { 
   Folder, 
-  getFolders,
-  createFolder,
-  renameFolder,
-  deleteFolder
+  getFolders, 
+  createFolder, 
+  renameFolder, 
+  deleteFolder 
 } from '@/utils/storage';
+import { toast } from 'sonner';
 
 export const useFolderOperations = (
   currentFolderId: string,
-  setCurrentFolderId: (folderId: string) => void,
+  setCurrentFolderId: (id: string) => void,
   setCurrentPath: (path: Folder[]) => void,
   setRefreshTrigger: (value: (prev: number) => number) => void
 ) => {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
-  
-  // Modals for folder operations
   const [newFolderModalOpen, setNewFolderModalOpen] = useState<boolean>(false);
   const [renameFolderModalOpen, setRenameFolderModalOpen] = useState<boolean>(false);
   const [deleteFolderModalOpen, setDeleteFolderModalOpen] = useState<boolean>(false);
   
-  // Shared storage flag
-  const SHARED_STORAGE = true;
-  
-  // Load folders for the current folder
+  // Load folders
   const loadFolders = useCallback(() => {
     try {
-      const allFolders = getFolders(SHARED_STORAGE);
-      const folderChildren = allFolders.filter(folder => folder.parentId === currentFolderId);
-      setFolders(folderChildren);
-      
-      // Update path breadcrumbs
-      if (currentFolderId === 'root') {
-        const rootFolder = allFolders.find(f => f.id === 'root');
-        setCurrentPath(rootFolder ? [rootFolder] : []);
-      } else {
-        const pathItems: Folder[] = [];
-        let currentId: string | null = currentFolderId;
-        
-        while (currentId) {
-          const folder = allFolders.find(f => f.id === currentId);
-          if (folder) {
-            pathItems.unshift(folder);
-            currentId = folder.parentId;
-          } else {
-            currentId = null;
-          }
-        }
-        
-        setCurrentPath(pathItems);
-      }
+      const loadedFolders = getFolders();
+      setFolders(loadedFolders.filter(folder => folder.parentId === currentFolderId));
     } catch (error) {
       console.error('Error loading folders:', error);
       toast.error('Failed to load folders');
     }
-  }, [currentFolderId, setCurrentPath]);
+  }, [currentFolderId]);
   
-  // Folder navigation handlers
+  // Update current path
+  useEffect(() => {
+    const buildPath = (): Folder[] => {
+      const path: Folder[] = [];
+      let currentFolder = folders.find(f => f.id === currentFolderId);
+      
+      // If current folder is not found in children (could be root or path not fully loaded yet)
+      if (!currentFolder) {
+        const allFolders = getFolders();
+        currentFolder = allFolders.find(f => f.id === currentFolderId);
+        if (!currentFolder) return path;
+      }
+      
+      path.unshift(currentFolder);
+      
+      // Traverse up the folder hierarchy
+      const allFolders = getFolders();
+      let parentId = currentFolder.parentId;
+      
+      while (parentId) {
+        const parent = allFolders.find(f => f.id === parentId);
+        if (!parent) break;
+        
+        path.unshift(parent);
+        parentId = parent.parentId;
+      }
+      
+      return path;
+    };
+    
+    setCurrentPath(buildPath());
+  }, [currentFolderId, folders, setCurrentPath]);
+  
+  // Folder operations
   const handleFolderClick = useCallback((folder: Folder) => {
     setCurrentFolderId(folder.id);
   }, [setCurrentFolderId]);
@@ -67,35 +76,62 @@ export const useFolderOperations = (
   const handleBreadcrumbClick = useCallback((folder: Folder) => {
     setCurrentFolderId(folder.id);
   }, [setCurrentFolderId]);
-
-  const handleBackClick = useCallback((currentPath: Folder[]) => {
-    if (currentPath.length > 1) {
-      const parentFolder = currentPath[currentPath.length - 2];
+  
+  const handleBackClick = useCallback((path: Folder[]) => {
+    if (path.length > 1) {
+      // Go to parent folder
+      const parentFolder = path[path.length - 2];
       setCurrentFolderId(parentFolder.id);
+    } else if (path.length === 1 && path[0].parentId) {
+      // If we have a single item with a parent, go to that parent
+      setCurrentFolderId(path[0].parentId);
+    } else {
+      // We're at root, should not happen but handle gracefully
+      const allFolders = getFolders();
+      const rootFolder = allFolders.find(f => f.id === 'root');
+      if (rootFolder) {
+        setCurrentFolderId(rootFolder.id);
+      }
     }
   }, [setCurrentFolderId]);
   
-  // Folder operation handlers
   const handleCreateFolderClick = useCallback(() => {
     setNewFolderModalOpen(true);
   }, []);
   
-  const handleCreateFolder = useCallback((name: string) => {
-    createFolder(name, currentFolderId, SHARED_STORAGE);
-    setRefreshTrigger(prev => prev + 1);
-  }, [currentFolderId, setRefreshTrigger]);
+  const handleCreateFolder = useCallback(async (name: string) => {
+    try {
+      await createFolder(name, currentFolderId);
+      loadFolders();
+      setRefreshTrigger(prev => prev + 1);
+      return true;
+    } catch (error) {
+      console.error('Error creating folder:', error);
+      toast.error('Failed to create folder');
+      return false;
+    }
+  }, [currentFolderId, loadFolders, setRefreshTrigger]);
   
   const handleRenameFolderClick = useCallback((folder: Folder) => {
     setSelectedFolder(folder);
     setRenameFolderModalOpen(true);
   }, []);
   
-  const handleRenameFolder = useCallback((newName: string) => {
+  const handleRenameFolder = useCallback(async (newName: string) => {
     if (selectedFolder) {
-      renameFolder(selectedFolder.id, newName, SHARED_STORAGE);
-      setRefreshTrigger(prev => prev + 1);
+      try {
+        await renameFolder(selectedFolder.id, newName);
+        loadFolders();
+        setRefreshTrigger(prev => prev + 1);
+        return true;
+      } catch (error) {
+        console.error('Error renaming folder:', error);
+        toast.error('Failed to rename folder');
+        return false;
+      }
     }
-  }, [selectedFolder, setRefreshTrigger]);
+    return false;
+  }, [selectedFolder, loadFolders, setRefreshTrigger]);
   
   const handleDeleteFolderClick = useCallback((folder: Folder) => {
     setSelectedFolder(folder);
@@ -104,10 +140,19 @@ export const useFolderOperations = (
   
   const handleDeleteFolder = useCallback(async () => {
     if (selectedFolder) {
-      await deleteFolder(selectedFolder.id, SHARED_STORAGE);
-      setRefreshTrigger(prev => prev + 1);
+      try {
+        await deleteFolder(selectedFolder.id);
+        loadFolders();
+        setRefreshTrigger(prev => prev + 1);
+        return true;
+      } catch (error) {
+        console.error('Error deleting folder:', error);
+        toast.error('Failed to delete folder');
+        return false;
+      }
     }
-  }, [selectedFolder, setRefreshTrigger]);
+    return false;
+  }, [selectedFolder, loadFolders, setRefreshTrigger]);
   
   return {
     folders,

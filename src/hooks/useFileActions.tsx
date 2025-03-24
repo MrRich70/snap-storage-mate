@@ -16,8 +16,6 @@ export const useFileActions = (
   const [deleteFileModalOpen, setDeleteFileModalOpen] = useState<boolean>(false);
   const [viewFileModalOpen, setViewFileModalOpen] = useState<boolean>(false);
   
-  const SHARED_STORAGE = true;
-  
   const handleRenameFileClick = useCallback((file: ImageFile) => {
     setSelectedFile(file);
     setRenameFileModalOpen(true);
@@ -25,7 +23,7 @@ export const useFileActions = (
   
   const handleRenameFile = useCallback(async (newName: string) => {
     if (selectedFile) {
-      await renameFile(selectedFile.id, newName, currentFolderId, SHARED_STORAGE);
+      await renameFile(selectedFile.id, newName, currentFolderId);
       setRefreshTrigger(prev => prev + 1);
     }
   }, [selectedFile, currentFolderId, setRefreshTrigger]);
@@ -37,7 +35,7 @@ export const useFileActions = (
   
   const handleDeleteFile = useCallback(async () => {
     if (selectedFile) {
-      await deleteFile(selectedFile.id, currentFolderId, SHARED_STORAGE);
+      await deleteFile(selectedFile.id, currentFolderId);
       setRefreshTrigger(prev => prev + 1);
     }
   }, [selectedFile, currentFolderId, setRefreshTrigger]);

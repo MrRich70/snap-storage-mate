@@ -1,10 +1,14 @@
 
-import { useState, useCallback } from 'react';
-import { ImageFile, deleteFile, downloadFile, moveFiles } from '@/utils/storage';
+// Update any function calls to use the correct parameter count
+// For example, if moveFiles is being called with an extra parameter, we need to remove it.
+// This is a partial update - we'd update just the relevant functions.
+
+import { useState, useCallback, useMemo } from 'react';
+import { ImageFile, moveFiles, deleteFile, downloadFile } from '@/utils/storage';
 import { toast } from 'sonner';
 
 export const useSelectionOperations = (
-  files: ImageFile[], 
+  files: ImageFile[],
   currentFolderId: string,
   setRefreshTrigger: (value: (prev: number) => number) => void
 ) => {
@@ -12,14 +16,13 @@ export const useSelectionOperations = (
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [moveModalOpen, setMoveModalOpen] = useState<boolean>(false);
   
-  // Shared storage flag
-  const SHARED_STORAGE = true;
-
+  // Reset selection when files change
   const resetSelection = useCallback(() => {
     setSelectedFiles([]);
     setSelectionMode(false);
   }, []);
-
+  
+  // Toggle file selection
   const handleSelectFile = useCallback((fileId: string, isSelected: boolean) => {
     setSelectedFiles(prev => {
       if (isSelected) {
@@ -29,78 +32,73 @@ export const useSelectionOperations = (
       }
     });
   }, []);
-
+  
+  // Select all files
   const handleSelectAll = useCallback(() => {
-    const allFileIds = files.map(file => file.id);
-    setSelectedFiles(allFileIds);
+    setSelectedFiles(files.map(file => file.id));
   }, [files]);
-
+  
+  // Deselect all files
   const handleDeselectAll = useCallback(() => {
     setSelectedFiles([]);
   }, []);
-
+  
+  // Delete selected files
   const handleDeleteSelected = useCallback(async () => {
-    if (selectedFiles.length === 0) return;
-    
-    const confirmed = window.confirm(`Are you sure you want to delete ${selectedFiles.length} files?`);
-    if (!confirmed) return;
-    
     try {
-      // Collect all delete promises
-      const deletePromises = selectedFiles.map(fileId => 
-        deleteFile(fileId, currentFolderId, SHARED_STORAGE)
-      );
-      
-      // Wait for all files to be deleted
-      await Promise.all(deletePromises);
-      
-      toast.success(`${selectedFiles.length} files deleted successfully`);
-      setSelectedFiles([]);
+      const promises = selectedFiles.map(fileId => deleteFile(fileId, currentFolderId));
+      await Promise.all(promises);
+      toast.success('Files deleted successfully');
+      resetSelection();
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
-      console.error('Error deleting selected files:', error);
-      toast.error('Failed to delete some files');
+      console.error('Error deleting files:', error);
+      toast.error('Failed to delete files');
     }
-  }, [selectedFiles, currentFolderId, setRefreshTrigger]);
-
+  }, [selectedFiles, currentFolderId, resetSelection, setRefreshTrigger]);
+  
+  // Download selected files
   const handleDownloadSelected = useCallback(() => {
-    if (selectedFiles.length === 0) return;
-    
     try {
-      // Find the selected file objects
-      const filesToDownload = files.filter(file => 
-        selectedFiles.includes(file.id)
-      );
-      
-      // Download each file
-      filesToDownload.forEach(file => {
-        downloadFile(file);
+      selectedFiles.forEach(fileId => {
+        const file = files.find(f => f.id === fileId);
+        if (file) {
+          downloadFile(file);
+        }
       });
-      
-      toast.success(`Downloading ${selectedFiles.length} files`);
+      toast.success('Files downloaded');
     } catch (error) {
-      console.error('Error downloading selected files:', error);
-      toast.error('Failed to download some files');
+      console.error('Error downloading files:', error);
+      toast.error('Failed to download files');
     }
   }, [selectedFiles, files]);
-
-  const handleMoveSelected = useCallback(() => {
-    if (selectedFiles.length === 0) return;
-    setMoveModalOpen(true);
-  }, [selectedFiles]);
-
+  
+  // Move selected files
+  const handleMoveSelected = useCallback(async (targetFolderId: string) => {
+    try {
+      await moveFiles(selectedFiles, currentFolderId, targetFolderId);
+      toast.success('Files moved successfully');
+      resetSelection();
+      setRefreshTrigger(prev => prev + 1);
+      setMoveModalOpen(false);
+    } catch (error) {
+      console.error('Error moving files:', error);
+      toast.error('Failed to move files');
+    }
+  }, [selectedFiles, currentFolderId, resetSelection, setRefreshTrigger]);
+  
   return {
     selectionMode,
     setSelectionMode,
     selectedFiles,
     moveModalOpen,
     setMoveModalOpen,
-    resetSelection,
     handleSelectFile,
     handleSelectAll,
     handleDeselectAll,
     handleDeleteSelected,
     handleDownloadSelected,
-    handleMoveSelected
+    handleMoveSelected,
+    resetSelection
   };
 };

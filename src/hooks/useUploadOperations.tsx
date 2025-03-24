@@ -2,7 +2,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { 
-  uploadLocalFile,
+  uploadFile,
   retryUpload,
   cancelUpload,
   clearCompletedUploads,
@@ -20,8 +20,6 @@ export const useUploadOperations = (
   const [uploadingFile, setUploadingFile] = useState<boolean>(false);
   const [fileCache, setFileCache] = useState<Map<string, File>>(new Map());
   const [shouldAutoRefresh, setShouldAutoRefresh] = useState<boolean>(false);
-  
-  const SHARED_STORAGE = true;
   
   const handleUploadClick = useCallback((e?: React.MouseEvent) => {
     if (e) {
@@ -50,7 +48,7 @@ export const useUploadOperations = (
         const cacheKey = `${currentFolderId}_${file.name}_${Date.now()}`;
         newFileCache.set(cacheKey, file);
         
-        const uploadPromise = uploadLocalFile(file, currentFolderId, SHARED_STORAGE)
+        const uploadPromise = uploadFile(file, currentFolderId)
           .then(() => {
             // Broadcast each file change individually with a unique timestamp
             broadcastFileChanged(currentFolderId);
@@ -100,7 +98,7 @@ export const useUploadOperations = (
     for (const [cacheKey, cachedFile] of fileCache.entries()) {
       if (cacheKey.includes(uploadId)) {
         try {
-          await retryUpload(uploadId, cachedFile, currentFolderId, SHARED_STORAGE);
+          await retryUpload(uploadId, cachedFile, currentFolderId);
           // Broadcast file change
           broadcastFileChanged(currentFolderId);
           setRefreshTrigger(prev => prev + 1);
