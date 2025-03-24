@@ -1,18 +1,20 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { FolderPlusIcon, UploadIcon, Loader2Icon } from 'lucide-react';
+import { FolderPlusIcon, UploadIcon, Loader2Icon, RefreshCwIcon } from 'lucide-react';
 
 interface ActionButtonsProps {
   onCreateFolderClick: () => void;
   onUploadClick: (e: React.MouseEvent) => void;
   isUploading: boolean;
+  onManualRefresh?: () => void; // Optional manual refresh handler
 }
 
 const ActionButtons: React.FC<ActionButtonsProps> = ({
   onCreateFolderClick,
   onUploadClick,
   isUploading,
+  onManualRefresh
 }) => {
   return (
     <div className="flex items-center space-x-2">
@@ -50,6 +52,24 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
           </>
         )}
       </Button>
+      
+      {onManualRefresh && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onManualRefresh();
+          }}
+          title="Refresh Images (if not loading)"
+          className="flex items-center gap-1"
+          type="button"
+        >
+          <RefreshCwIcon className="h-4 w-4" />
+          <span>Refresh Images</span>
+        </Button>
+      )}
     </div>
   );
 };

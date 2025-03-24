@@ -14,6 +14,7 @@ interface DashboardHeaderProps {
   onCreateFolderClick: () => void;
   onUploadClick: (e: React.MouseEvent) => void;
   isUploading: boolean;
+  onManualRefresh?: () => void; // Optional manual refresh for images not loading
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({
@@ -23,7 +24,8 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onRefresh,
   onCreateFolderClick,
   onUploadClick,
-  isUploading
+  isUploading,
+  onManualRefresh
 }) => {
   return (
     <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -56,6 +58,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           onUploadClick(e);
         }}
         isUploading={isUploading}
+        onManualRefresh={onManualRefresh}
       />
     </div>
   );

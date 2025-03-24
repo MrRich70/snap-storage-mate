@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { 
@@ -21,6 +20,7 @@ export const useFileOperations = (currentFolderId: string, refreshTrigger: numbe
   const [uploadProgress, setUploadProgress] = useState<any[]>([]);
   const [uploadingFile, setUploadingFile] = useState<boolean>(false);
   const [fileCache, setFileCache] = useState<Map<string, File>>(new Map());
+  const [shouldAutoRefresh, setShouldAutoRefresh] = useState<boolean>(false);
   
   const [renameFileModalOpen, setRenameFileModalOpen] = useState<boolean>(false);
   const [deleteFileModalOpen, setDeleteFileModalOpen] = useState<boolean>(false);
@@ -43,14 +43,14 @@ export const useFileOperations = (currentFolderId: string, refreshTrigger: numbe
       const currentUploads = getUploadProgress();
       setUploadProgress(currentUploads);
       
-      const completedUploads = currentUploads.filter(u => u.status === 'completed');
-      if (completedUploads.length > 0 && currentUploads.every(u => u.status !== 'uploading')) {
+      if (shouldAutoRefresh && currentUploads.length > 0 && currentUploads.every(u => u.status === 'completed' || u.status === 'error')) {
+        setShouldAutoRefresh(false);
         setRefreshTrigger(prev => prev + 1);
       }
     }, 500);
     
     return () => clearInterval(interval);
-  }, [setRefreshTrigger]);
+  }, [setRefreshTrigger, shouldAutoRefresh]);
   
   const handleUploadClick = useCallback((e?: React.MouseEvent) => {
     if (e) {
@@ -61,7 +61,6 @@ export const useFileOperations = (currentFolderId: string, refreshTrigger: numbe
   }, []);
   
   const handleFileInputChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Prevent any form submission or page reload
     e.preventDefault();
     e.stopPropagation();
     
@@ -90,20 +89,18 @@ export const useFileOperations = (currentFolderId: string, refreshTrigger: numbe
       
       setFileCache(newFileCache);
       
-      // Wait for all uploads to complete
       Promise.all(uploadPromises)
         .then(() => {
-          // Only refresh the trigger after all uploads are done
-          setRefreshTrigger(prev => prev + 1);
+          loadFiles();
           toast.success(`${files.length} file(s) uploaded successfully`);
         })
         .catch((error) => {
           console.error('Upload error:', error);
           toast.error('Some files failed to upload');
+          setShouldAutoRefresh(true);
         })
         .finally(() => {
           setUploadingFile(false);
-          // Reset the input value to allow the same file to be uploaded again
           if (fileInputRef.current) {
             fileInputRef.current.value = '';
           }
@@ -112,12 +109,15 @@ export const useFileOperations = (currentFolderId: string, refreshTrigger: numbe
       console.error('Upload error:', error);
       toast.error('Failed to upload file(s)');
       setUploadingFile(false);
-      // Always reset the input value even if there's an error
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     }
-  }, [currentFolderId, fileCache, setRefreshTrigger]);
+  }, [currentFolderId, fileCache, setRefreshTrigger, loadFiles]);
+  
+  const forceRefresh = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, [setRefreshTrigger]);
   
   const handleRenameFileClick = useCallback((file: ImageFile) => {
     setSelectedFile(file);
@@ -206,6 +206,7 @@ export const useFileOperations = (currentFolderId: string, refreshTrigger: numbe
     handleRetryUpload,
     handleCancelUpload,
     handleClearCompletedUploads,
-    loadFiles
+    loadFiles,
+    forceRefresh
   };
 };
