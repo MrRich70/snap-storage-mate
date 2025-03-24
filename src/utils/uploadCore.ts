@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -9,6 +10,8 @@ export const uploadFileToSupabase = async (
   userId: string = 'anonymous'
 ): Promise<string> => {
   try {
+    console.log(`Uploading file to Supabase: ${file.name}, folder: ${folderId}, user: ${userId}`);
+    
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
     const filePath = `${userId}/${folderId}/${fileName}`;
@@ -20,12 +23,19 @@ export const uploadFileToSupabase = async (
         upsert: false
       });
     
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase upload error:", error);
+      throw error;
+    }
+    
+    console.log("Supabase upload successful:", data);
     
     // Get the public URL for the uploaded file
     const { data: { publicUrl } } = supabase.storage
       .from('files')
       .getPublicUrl(filePath);
+    
+    console.log("Generated public URL:", publicUrl);
     
     return publicUrl;
   } catch (error) {

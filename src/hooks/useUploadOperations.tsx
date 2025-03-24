@@ -42,6 +42,8 @@ export const useUploadOperations = (
     const uploadPromises = [];
     
     try {
+      console.log(`Uploading ${files.length} files to folder ${currentFolderId}`);
+      
       // Process each file individually
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -49,14 +51,16 @@ export const useUploadOperations = (
         newFileCache.set(cacheKey, file);
         
         const uploadPromise = uploadFile(file, currentFolderId)
-          .then(() => {
+          .then((newFile) => {
             // Broadcast each file change individually with a unique timestamp
             broadcastFileChanged(currentFolderId);
-            console.log(`File uploaded successfully: ${file.name}`);
+            console.log(`File uploaded successfully:`, newFile);
+            return newFile;
           })
           .catch((error) => {
             console.error('Upload error:', error);
             toast.error(`Failed to upload ${file.name}`);
+            return null;
           });
           
         uploadPromises.push(uploadPromise);
@@ -65,28 +69,22 @@ export const useUploadOperations = (
       setFileCache(newFileCache);
       
       // Wait for all uploads to complete
-      Promise.all(uploadPromises)
-        .then(() => {
-          // Load files only once after all uploads are complete
-          loadFiles();
-          toast.success(`${files.length} file(s) uploaded successfully`);
-          // Force refresh to make sure UI is updated
-          setRefreshTrigger(prev => prev + 1);
-        })
-        .catch((error) => {
-          console.error('Upload error:', error);
-          toast.error('Some files failed to upload');
-          setShouldAutoRefresh(true);
-        })
-        .finally(() => {
-          setUploadingFile(false);
-          if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-          }
-        });
+      const results = await Promise.all(uploadPromises);
+      const successfulUploads = results.filter(result => result !== null);
+      
+      if (successfulUploads.length > 0) {
+        // Load files only once after all uploads are complete
+        await loadFiles();
+        toast.success(`${successfulUploads.length} file(s) uploaded successfully`);
+        // Force refresh to make sure UI is updated
+        setRefreshTrigger(prev => prev + 1);
+      } else {
+        toast.error('All uploads failed');
+      }
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Failed to upload file(s)');
+    } finally {
       setUploadingFile(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -101,6 +99,7 @@ export const useUploadOperations = (
           await retryUpload(uploadId, cachedFile, currentFolderId);
           // Broadcast file change
           broadcastFileChanged(currentFolderId);
+          await loadFiles();
           setRefreshTrigger(prev => prev + 1);
           return;
         } catch (error) {
@@ -111,7 +110,7 @@ export const useUploadOperations = (
     }
     
     toast.error('Original file not found for retry. Please upload again.');
-  }, [fileCache, currentFolderId, setRefreshTrigger]);
+  }, [fileCache, currentFolderId, setRefreshTrigger, loadFiles]);
   
   const handleCancelUpload = useCallback((uploadId: string) => {
     cancelUpload(uploadId);
@@ -131,9 +130,11 @@ export const useUploadOperations = (
     if (shouldAutoRefresh && currentUploads.length > 0 && 
         currentUploads.every(u => u.status === 'completed' || u.status === 'error')) {
       setShouldAutoRefresh(false);
-      setRefreshTrigger(prev => prev + 1);
+      loadFiles().then(() => {
+        setRefreshTrigger(prev => prev + 1);
+      });
     }
-  }, [shouldAutoRefresh, setRefreshTrigger]);
+  }, [shouldAutoRefresh, setRefreshTrigger, loadFiles]);
   
   return {
     fileInputRef,

@@ -1,7 +1,7 @@
 
 import { ImageFile } from './storageTypes';
 import { v4 as uuidv4 } from 'uuid';
-import { uploadToSupabase } from '@/utils/fileUploader';
+import { handleFileUpload } from '@/utils/uploadUtils';
 import { toast } from 'sonner';
 import { broadcastFileChanged } from './realtimeSync';
 import { getUserStorageKey } from './storage';
@@ -27,7 +27,7 @@ export const uploadFile = async (file: File, folderId: string): Promise<ImageFil
     // Upload the file to Supabase and get the public URL
     const fileId = uuidv4();
     const userId = localStorage.getItem('servpro_current_user') || 'anonymous';
-    const url = await uploadToSupabase(file, folderId, userId);
+    const url = await handleFileUpload(file, folderId, userId);
     
     // Use the actual URL from Supabase, not a local blob URL
     const thumbnailUrl = url;
@@ -53,7 +53,9 @@ export const uploadFile = async (file: File, folderId: string): Promise<ImageFil
     filesObj[folderId].push(newFile);
     localStorage.setItem(storageKey, JSON.stringify(filesObj));
     
-    // Broadcast file change should be handled by the caller after the Promise resolves
+    // Broadcast file change
+    broadcastFileChanged(folderId);
+    
     return newFile;
   } catch (error) {
     console.error('Error uploading file:', error);
