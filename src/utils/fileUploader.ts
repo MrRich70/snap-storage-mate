@@ -1,6 +1,9 @@
 
-// Re-export upload functionality from our modules
-export { uploadFileToSupabase } from './uploadCore';
+// Import from the source file first
+import { uploadFileToSupabase } from './uploadCore';
+
+// Then re-export it
+export { uploadFileToSupabase };
 export { retryUpload } from './uploadRetry';
 
 /**
