@@ -52,8 +52,9 @@ export const useUploadOperations = (
         
         const uploadPromise = uploadLocalFile(file, currentFolderId, SHARED_STORAGE)
           .then(() => {
-            // Broadcast each file change individually
+            // Broadcast each file change individually with a unique timestamp
             broadcastFileChanged(currentFolderId);
+            console.log(`File uploaded successfully: ${file.name}`);
           })
           .catch((error) => {
             console.error('Upload error:', error);
@@ -71,6 +72,8 @@ export const useUploadOperations = (
           // Load files only once after all uploads are complete
           loadFiles();
           toast.success(`${files.length} file(s) uploaded successfully`);
+          // Force refresh to make sure UI is updated
+          setRefreshTrigger(prev => prev + 1);
         })
         .catch((error) => {
           console.error('Upload error:', error);
@@ -91,7 +94,7 @@ export const useUploadOperations = (
         fileInputRef.current.value = '';
       }
     }
-  }, [currentFolderId, fileCache, loadFiles]);
+  }, [currentFolderId, fileCache, loadFiles, setRefreshTrigger]);
   
   const handleRetryUpload = useCallback(async (uploadId: string) => {
     for (const [cacheKey, cachedFile] of fileCache.entries()) {

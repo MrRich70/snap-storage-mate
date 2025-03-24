@@ -1,40 +1,44 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { 
-  ImageFile,
-  getFiles
-} from '@/utils/storage';
+import { getFiles } from '@/utils/storage';
+import { ImageFile } from '@/utils/storageTypes';
 
+/**
+ * Hook for loading files from storage
+ */
 export const useFileLoading = (
   currentFolderId: string,
   refreshTrigger: number
 ) => {
   const [files, setFiles] = useState<ImageFile[]>([]);
-  const SHARED_STORAGE = true;
   
+  // Force refresh function
+  const forceRefresh = useCallback(() => {
+    console.log('Forcing file refresh...');
+    loadFiles();
+  }, [currentFolderId]);
+  
+  // Load files function
   const loadFiles = useCallback(async () => {
+    console.log('Loading files for folder:', currentFolderId);
     try {
-      const folderFiles = await getFiles(currentFolderId, SHARED_STORAGE);
-      setFiles(folderFiles);
+      const loadedFiles = await getFiles(currentFolderId, true);
+      console.log(`Loaded ${loadedFiles.length} files:`, loadedFiles);
+      setFiles(loadedFiles);
     } catch (error) {
       console.error('Error loading files:', error);
       toast.error('Failed to load files');
     }
   }, [currentFolderId]);
   
-  const forceRefresh = useCallback(() => {
-    loadFiles();
-  }, [loadFiles]);
-  
-  // Load files on mount and when triggered
+  // Load files on mount and when refreshTrigger or currentFolderId changes
   useEffect(() => {
-    loadFiles();
-  }, [loadFiles, refreshTrigger]);
+    if (currentFolderId) {
+      console.log(`Refreshing files for folder: ${currentFolderId} (trigger: ${refreshTrigger})`);
+      loadFiles();
+    }
+  }, [currentFolderId, refreshTrigger]);
   
-  return {
-    files,
-    loadFiles,
-    forceRefresh
-  };
+  return { files, loadFiles, forceRefresh };
 };

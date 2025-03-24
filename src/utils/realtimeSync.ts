@@ -25,6 +25,7 @@ export const setupRealtimeSync = (
       console.log('Received file_changed event with payload:', payload);
       // Only refresh files if the change is relevant to current folder
       if (!payload.payload || payload.payload.folderId === currentFolderId) {
+        console.log('Refreshing files for folder', currentFolderId);
         onFilesChanged();
       }
     })

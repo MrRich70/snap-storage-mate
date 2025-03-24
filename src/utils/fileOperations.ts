@@ -1,3 +1,4 @@
+
 import { ImageFile } from './storageTypes';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadToSupabase } from '@/utils/fileUploader';
@@ -50,6 +51,7 @@ export const uploadFile = async (file: File, folderId: string, isSharedStorage =
     filesObj[folderId].push(newFile);
     localStorage.setItem(storageKey, JSON.stringify(filesObj));
     
+    // Broadcast file change should be handled by the caller after the Promise resolves
     return newFile;
   } catch (error) {
     console.error('Error uploading file:', error);

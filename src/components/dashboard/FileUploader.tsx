@@ -8,7 +8,7 @@ interface FileUploaderProps {
 }
 
 const FileUploader = forwardRef<HTMLInputElement, FileUploaderProps>(
-  ({ onChange, accept = "image/*", multiple = true }, ref) => {
+  ({ onChange, accept = "*", multiple = true }, ref) => {
     // Prevent default behavior both here and in the parent handler
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       e.preventDefault(); // Prevent default behavior
