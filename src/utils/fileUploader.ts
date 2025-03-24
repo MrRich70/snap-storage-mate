@@ -12,8 +12,8 @@ export { retryUpload } from './uploadRetry';
 export const uploadToSupabase = async (
   file: File, 
   folderId: string, 
-  isSharedStorage = false
+  userId: string
 ): Promise<string> => {
   // Call our existing upload function
-  return await uploadFileToSupabase(file, folderId, isSharedStorage);
+  return await uploadFileToSupabase(file, folderId, userId);
 };

@@ -1,5 +1,6 @@
+
 import { v4 as uuidv4 } from 'uuid';
-import { uploadToSupabase } from './uploadCore';
+import { uploadFileToSupabase } from './uploadCore';
 import { getUserStorageKey } from './storage';
 
 // Store upload progress in memory
@@ -77,8 +78,8 @@ export const retryUpload = async (
       }
     }, 500);
 
-    // Upload to Supabase
-    await uploadToSupabase(file, folderId, userId);
+    // Upload to Supabase using the renamed function
+    await handleFileUpload(file, folderId, userId);
     
     clearInterval(progressInterval);
     
@@ -101,7 +102,7 @@ export const retryUpload = async (
 };
 
 // Upload a file to Supabase with progress tracking
-export const uploadToSupabase = async (
+export const handleFileUpload = async (
   file: File,
   folderId: string,
   userId: string = 'anonymous'
@@ -156,20 +157,6 @@ export const uploadToSupabase = async (
       status: 'error',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
-    throw error;
-  }
-};
-
-// Helper function to upload file to Supabase
-const uploadFileToSupabase = async (
-  file: File,
-  folderId: string,
-  userId: string
-): Promise<string> => {
-  try {
-    return await uploadToSupabase(file, folderId, userId);
-  } catch (error) {
-    console.error('Error in uploadFileToSupabase:', error);
     throw error;
   }
 };

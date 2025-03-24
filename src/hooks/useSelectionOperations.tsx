@@ -1,9 +1,5 @@
 
-// Update any function calls to use the correct parameter count
-// For example, if moveFiles is being called with an extra parameter, we need to remove it.
-// This is a partial update - we'd update just the relevant functions.
-
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { ImageFile, moveFiles, deleteFile, downloadFile } from '@/utils/storage';
 import { toast } from 'sonner';
 

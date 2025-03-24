@@ -15,7 +15,7 @@ export {
   clearCompletedUploads,
   cancelUpload,
   retryUpload,
-  uploadToSupabase
+  handleFileUpload as uploadToSupabase
 } from './uploadUtils';
 
 // Add initialization function for storage
