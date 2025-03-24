@@ -21,7 +21,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         size="sm"
         className="flex items-center gap-1"
         onClick={onCreateFolderClick}
-        type="button"
+        type="button" // Explicitly set type to button
       >
         <FolderPlusIcon className="h-4 w-4" />
         <span>New Folder</span>
@@ -29,10 +29,14 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
       
       <Button
         size="sm"
-        onClick={(e) => onUploadClick(e)}
+        onClick={(e) => {
+          e.preventDefault(); // Prevent default behavior
+          e.stopPropagation(); // Stop event propagation
+          onUploadClick(e);
+        }}
         disabled={isUploading}
         className="relative"
-        type="button" // Explicitly set type to button to prevent form submission
+        type="button" // Explicitly set type to button
       >
         {isUploading ? (
           <>

@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { 
@@ -54,12 +55,15 @@ export const useFileOperations = (currentFolderId: string, refreshTrigger: numbe
   const handleUploadClick = useCallback((e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
+      e.stopPropagation();
     }
     fileInputRef.current?.click();
   }, []);
   
   const handleFileInputChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Prevent any form submission or page reload
     e.preventDefault();
+    e.stopPropagation();
     
     const { files } = e.target;
     if (!files || files.length === 0) return;
@@ -86,20 +90,32 @@ export const useFileOperations = (currentFolderId: string, refreshTrigger: numbe
       
       setFileCache(newFileCache);
       
+      // Wait for all uploads to complete
       Promise.all(uploadPromises)
         .then(() => {
+          // Only refresh the trigger after all uploads are done
           setRefreshTrigger(prev => prev + 1);
           toast.success(`${files.length} file(s) uploaded successfully`);
         })
+        .catch((error) => {
+          console.error('Upload error:', error);
+          toast.error('Some files failed to upload');
+        })
         .finally(() => {
           setUploadingFile(false);
+          // Reset the input value to allow the same file to be uploaded again
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
         });
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Failed to upload file(s)');
       setUploadingFile(false);
-    } finally {
-      e.target.value = '';
+      // Always reset the input value even if there's an error
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   }, [currentFolderId, fileCache, setRefreshTrigger]);
   

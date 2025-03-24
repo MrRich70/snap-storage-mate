@@ -12,7 +12,7 @@ interface DashboardHeaderProps {
   onBackClick: () => void;
   onRefresh: () => void;
   onCreateFolderClick: () => void;
-  onUploadClick: (e: React.MouseEvent) => void; // Update to accept the event
+  onUploadClick: (e: React.MouseEvent) => void;
   isUploading: boolean;
 }
 
@@ -36,7 +36,10 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         <Button 
           variant="outline" 
           size="icon" 
-          onClick={onRefresh} 
+          onClick={(e) => {
+            e.preventDefault();
+            onRefresh();
+          }} 
           title="Refresh"
           className="ml-2"
           type="button"
@@ -47,7 +50,11 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
       
       <ActionButtons
         onCreateFolderClick={onCreateFolderClick}
-        onUploadClick={onUploadClick}
+        onUploadClick={(e) => {
+          // Ensure we're preventing default before passing to the handler
+          e.preventDefault();
+          onUploadClick(e);
+        }}
         isUploading={isUploading}
       />
     </div>
