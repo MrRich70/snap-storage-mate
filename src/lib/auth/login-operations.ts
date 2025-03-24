@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { isValidAccessCode } from './types';
@@ -95,14 +96,16 @@ export const loginWithPassword = async (
 
 /**
  * Signs the user out of their current session
+ * Preserves shared storage data
  */
 export const logoutUser = async (): Promise<void> => {
   try {
     console.log('Logging out user...');
     
-    // First, try to clear any app-specific local storage
+    // First, try to clear any app-specific local storage except shared storage
     const appStorageKeys = Object.keys(localStorage).filter(key => 
-      key.startsWith('servpro_') || key.includes('supabase')
+      (key.startsWith('servpro_') === false) && // Preserve shared storage
+      key.includes('supabase')
     );
     
     appStorageKeys.forEach(key => {

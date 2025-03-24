@@ -20,12 +20,12 @@ export {
 } from './uploadUtils';
 
 // Add initialization function for shared storage
-export const initializeStorage = (isSharedStorage = false) => {
+export const initializeStorage = (isSharedStorage = true) => {
   // Set a localStorage flag for shared storage
   localStorage.setItem('isSharedStorage', isSharedStorage ? 'true' : 'false');
   
   // Make sure the root folder exists
-  const storageKey = isSharedStorage ? 'servpro_folders' : 'folders';
+  const storageKey = 'servpro_folders'; // Always use shared storage key
   const folders = JSON.parse(localStorage.getItem(storageKey) || '[]');
   
   if (!folders.some((folder: any) => folder.id === 'root')) {

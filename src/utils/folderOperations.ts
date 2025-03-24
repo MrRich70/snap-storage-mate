@@ -3,22 +3,22 @@ import { Folder } from './storageTypes';
 import { v4 as uuidv4 } from 'uuid';
 import { broadcastFolderChanged } from './realtimeSync';
 
-// Get all folders
-export const getFolders = (isSharedStorage = false): Folder[] => {
-  const storageKey = isSharedStorage ? 'servpro_folders' : 'folders';
+// Get all folders - always use shared storage
+export const getFolders = (isSharedStorage = true): Folder[] => {
+  const storageKey = 'servpro_folders'; // Always use shared storage key
   return JSON.parse(localStorage.getItem(storageKey) || '[]');
 };
 
-// Get a specific folder by ID
-export const getFolder = (folderId: string, isSharedStorage = false): Folder | null => {
-  const folders = getFolders(isSharedStorage);
+// Get a specific folder by ID - always use shared storage
+export const getFolder = (folderId: string, isSharedStorage = true): Folder | null => {
+  const folders = getFolders(true); // Always use shared storage
   return folders.find(folder => folder.id === folderId) || null;
 };
 
-// Create a new folder
-export const createFolder = (name: string, parentId: string, isSharedStorage = false): Folder => {
-  const folders = getFolders(isSharedStorage);
-  const storageKey = isSharedStorage ? 'servpro_folders' : 'folders';
+// Create a new folder - always use shared storage
+export const createFolder = (name: string, parentId: string, isSharedStorage = true): Folder => {
+  const folders = getFolders(true); // Always use shared storage
+  const storageKey = 'servpro_folders'; // Always use shared storage key
   
   const newFolder: Folder = {
     id: uuidv4(),

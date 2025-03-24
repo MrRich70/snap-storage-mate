@@ -5,10 +5,10 @@ import { uploadToSupabase } from '@/utils/fileUploader';
 import { toast } from 'sonner';
 import { broadcastFileChanged } from './realtimeSync';
 
-// Get all files in a folder
-export const getFiles = async (folderId: string, isSharedStorage = false): Promise<ImageFile[]> => {
+// Get all files in a folder - always use shared storage
+export const getFiles = async (folderId: string, isSharedStorage = true): Promise<ImageFile[]> => {
   try {
-    const storageKey = isSharedStorage ? 'servpro_files' : 'files';
+    const storageKey = 'servpro_files'; // Always use shared storage key
     const filesObj = JSON.parse(localStorage.getItem(storageKey) || '{}');
     return filesObj[folderId] || [];
   } catch (error) {
@@ -17,15 +17,15 @@ export const getFiles = async (folderId: string, isSharedStorage = false): Promi
   }
 };
 
-// Create/upload a new file
-export const uploadFile = async (file: File, folderId: string, isSharedStorage = false): Promise<ImageFile> => {
+// Create/upload a new file - always use shared storage
+export const uploadFile = async (file: File, folderId: string, isSharedStorage = true): Promise<ImageFile> => {
   try {
-    const storageKey = isSharedStorage ? 'servpro_files' : 'files';
+    const storageKey = 'servpro_files'; // Always use shared storage key
     const filesObj = JSON.parse(localStorage.getItem(storageKey) || '{}');
     
     // Upload the file to Supabase and get the public URL
     const fileId = uuidv4();
-    const url = await uploadToSupabase(file, folderId, isSharedStorage);
+    const url = await uploadToSupabase(file, folderId, true); // Force shared storage
     
     // Use the actual URL from Supabase, not a local blob URL
     const thumbnailUrl = url;
@@ -59,10 +59,10 @@ export const uploadFile = async (file: File, folderId: string, isSharedStorage =
   }
 };
 
-// Rename a file
-export const renameFile = async (fileId: string, newName: string, folderId: string, isSharedStorage = false): Promise<boolean> => {
+// Rename a file - always use shared storage
+export const renameFile = async (fileId: string, newName: string, folderId: string, isSharedStorage = true): Promise<boolean> => {
   try {
-    const storageKey = isSharedStorage ? 'servpro_files' : 'files';
+    const storageKey = 'servpro_files'; // Always use shared storage key
     const filesObj = JSON.parse(localStorage.getItem(storageKey) || '{}');
     
     if (!filesObj[folderId]) return false;
@@ -88,10 +88,10 @@ export const renameFile = async (fileId: string, newName: string, folderId: stri
   }
 };
 
-// Delete a file
-export const deleteFile = async (fileId: string, folderId: string, isSharedStorage = false): Promise<boolean> => {
+// Delete a file - always use shared storage
+export const deleteFile = async (fileId: string, folderId: string, isSharedStorage = true): Promise<boolean> => {
   try {
-    const storageKey = isSharedStorage ? 'servpro_files' : 'files';
+    const storageKey = 'servpro_files'; // Always use shared storage key
     const filesObj = JSON.parse(localStorage.getItem(storageKey) || '{}');
     
     if (!filesObj[folderId]) return false;
@@ -118,24 +118,10 @@ export const deleteFile = async (fileId: string, folderId: string, isSharedStora
   }
 };
 
-// Download a file
-export const downloadFile = (file: ImageFile): void => {
+// Move files to a different folder - always use shared storage
+export const moveFiles = async (fileIds: string[], sourceFolderId: string, targetFolderId: string, isSharedStorage = true): Promise<boolean> => {
   try {
-    const a = document.createElement('a');
-    a.href = file.url;
-    a.download = file.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  } catch (error) {
-    console.error('Error downloading file:', error);
-  }
-};
-
-// Move files to a different folder
-export const moveFiles = async (fileIds: string[], sourceFolderId: string, targetFolderId: string, isSharedStorage = false): Promise<boolean> => {
-  try {
-    const storageKey = isSharedStorage ? 'servpro_files' : 'files';
+    const storageKey = 'servpro_files'; // Always use shared storage key
     const filesObj = JSON.parse(localStorage.getItem(storageKey) || '{}');
     
     if (!filesObj[sourceFolderId]) return false;
@@ -165,6 +151,20 @@ export const moveFiles = async (fileIds: string[], sourceFolderId: string, targe
   } catch (error) {
     console.error('Error moving files:', error);
     return false;
+  }
+};
+
+// Download a file
+export const downloadFile = (file: ImageFile): void => {
+  try {
+    const a = document.createElement('a');
+    a.href = file.url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (error) {
+    console.error('Error downloading file:', error);
   }
 };
 

@@ -23,6 +23,7 @@ export const useFileLoading = (
   const loadFiles = useCallback(async () => {
     console.log('Loading files for folder:', currentFolderId);
     try {
+      // Always use shared storage for files to persist between sessions
       const loadedFiles = await getFiles(currentFolderId, true);
       console.log(`Loaded ${loadedFiles.length} files:`, loadedFiles);
       setFiles(loadedFiles);
@@ -38,7 +39,7 @@ export const useFileLoading = (
       console.log(`Refreshing files for folder: ${currentFolderId} (trigger: ${refreshTrigger})`);
       loadFiles();
     }
-  }, [currentFolderId, refreshTrigger]);
+  }, [currentFolderId, refreshTrigger, loadFiles]);
   
   return { files, loadFiles, forceRefresh };
 };

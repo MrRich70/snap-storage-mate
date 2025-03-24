@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -9,7 +8,7 @@ import { useFolderOperations } from './useFolderOperations';
 import { useSelectionOperations } from './useSelectionOperations';
 import { setupRealtimeSync } from '@/utils/realtimeSync';
 
-// Configuration for shared storage
+// Configuration for shared storage - always use shared storage
 const SHARED_STORAGE = true;
 
 export const useDashboard = () => {
@@ -38,11 +37,10 @@ export const useDashboard = () => {
   // Initialize storage and load current folder
   useEffect(() => {
     const loadData = async () => {
-      if (!isAuthenticated || !user) return;
-      
-      console.log('Loading dashboard data for user:', user.email);
+      console.log('Loading dashboard data');
       setIsLoading(true);
       try {
+        // Always initialize with shared storage
         initializeStorage(SHARED_STORAGE);
         folderOperations.loadFolders();
         await fileOperations.loadFiles();
@@ -54,14 +52,13 @@ export const useDashboard = () => {
       }
     };
     
+    // Load data whether authenticated or not
     loadData();
-  }, [refreshTrigger, currentFolderId, isAuthenticated, user]);
+  }, [refreshTrigger, currentFolderId]);
 
   // Setup real-time sync
   useEffect(() => {
-    if (!isAuthenticated || !user) return;
-
-    console.log('Setting up real-time sync for user:', user.email);
+    console.log('Setting up real-time sync');
     
     const handleFoldersChanged = () => {
       console.log('Folders changed, refreshing folder list');
@@ -81,7 +78,7 @@ export const useDashboard = () => {
     );
 
     return cleanup;
-  }, [isAuthenticated, currentFolderId, user]);
+  }, [currentFolderId]);
   
   // Reset selection when folder changes
   useEffect(() => {
