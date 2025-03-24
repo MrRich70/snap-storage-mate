@@ -1,6 +1,7 @@
 
 import { Folder } from './storageTypes';
 import { v4 as uuidv4 } from 'uuid';
+import { broadcastFolderChanged } from './realtimeSync';
 
 // Get all folders
 export const getFolders = (isSharedStorage = false): Folder[] => {
@@ -30,6 +31,9 @@ export const createFolder = (name: string, parentId: string, isSharedStorage = f
   folders.push(newFolder);
   localStorage.setItem(storageKey, JSON.stringify(folders));
   
+  // Broadcast the change to all clients
+  broadcastFolderChanged();
+  
   return newFolder;
 };
 
@@ -48,6 +52,10 @@ export const renameFolder = (folderId: string, newName: string, isSharedStorage 
   };
   
   localStorage.setItem(storageKey, JSON.stringify(folders));
+  
+  // Broadcast the change to all clients
+  broadcastFolderChanged();
+  
   return true;
 };
 
@@ -84,6 +92,9 @@ export const deleteFolder = async (folderId: string, isSharedStorage = false): P
       delete files[id];
     });
     localStorage.setItem(fileStorageKey, JSON.stringify(files));
+    
+    // Broadcast the change to all clients
+    broadcastFolderChanged();
     
     return true;
   } catch (error) {
@@ -126,5 +137,9 @@ export const moveFolder = (folderId: string, newParentId: string, isSharedStorag
   };
   
   localStorage.setItem(storageKey, JSON.stringify(folders));
+  
+  // Broadcast the change to all clients
+  broadcastFolderChanged();
+  
   return true;
 };

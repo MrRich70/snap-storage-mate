@@ -55,6 +55,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         onUploadClick={(e) => {
           // Ensure we're preventing default before passing to the handler
           e.preventDefault();
+          e.stopPropagation();
           onUploadClick(e);
         }}
         isUploading={isUploading}

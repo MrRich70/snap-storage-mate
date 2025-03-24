@@ -3,6 +3,7 @@ import { ImageFile } from './storageTypes';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadToSupabase } from '@/utils/fileUploader';
 import { toast } from 'sonner';
+import { broadcastFileChanged } from './realtimeSync';
 
 // Get all files in a folder
 export const getFiles = async (folderId: string, isSharedStorage = false): Promise<ImageFile[]> => {
@@ -49,6 +50,9 @@ export const uploadFile = async (file: File, folderId: string, isSharedStorage =
     filesObj[folderId].push(newFile);
     localStorage.setItem(storageKey, JSON.stringify(filesObj));
     
+    // Broadcast file change to all clients
+    broadcastFileChanged(folderId);
+    
     return newFile;
   } catch (error) {
     console.error('Error uploading file:', error);
@@ -74,6 +78,10 @@ export const renameFile = async (fileId: string, newName: string, folderId: stri
     };
     
     localStorage.setItem(storageKey, JSON.stringify(filesObj));
+    
+    // Broadcast file change to all clients
+    broadcastFileChanged(folderId);
+    
     return true;
   } catch (error) {
     console.error('Error renaming file:', error);
@@ -100,6 +108,10 @@ export const deleteFile = async (fileId: string, folderId: string, isSharedStora
     
     filesObj[folderId].splice(fileIndex, 1);
     localStorage.setItem(storageKey, JSON.stringify(filesObj));
+    
+    // Broadcast file change to all clients
+    broadcastFileChanged(folderId);
+    
     return true;
   } catch (error) {
     console.error('Error deleting file:', error);
@@ -143,6 +155,13 @@ export const moveFiles = async (fileIds: string[], sourceFolderId: string, targe
     filesObj[targetFolderId] = [...filesObj[targetFolderId], ...filesToMove];
     
     localStorage.setItem(storageKey, JSON.stringify(filesObj));
+    
+    // Broadcast file changes to all clients for both source and target folders
+    broadcastFileChanged(sourceFolderId);
+    if (sourceFolderId !== targetFolderId) {
+      broadcastFileChanged(targetFolderId);
+    }
+    
     return true;
   } catch (error) {
     console.error('Error moving files:', error);

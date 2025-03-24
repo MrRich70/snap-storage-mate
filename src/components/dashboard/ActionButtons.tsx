@@ -22,7 +22,11 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         variant="outline" 
         size="sm"
         className="flex items-center gap-1"
-        onClick={onCreateFolderClick}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onCreateFolderClick();
+        }}
         type="button" // Explicitly set type to button
       >
         <FolderPlusIcon className="h-4 w-4" />

@@ -7,6 +7,7 @@ import { Folder, initializeStorage } from '@/utils/storage';
 import { useFileOperations } from './useFileOperations';
 import { useFolderOperations } from './useFolderOperations';
 import { useSelectionOperations } from './useSelectionOperations';
+import { setupRealtimeSync } from '@/utils/realtimeSync';
 
 // Configuration for shared storage
 const SHARED_STORAGE = true;
@@ -51,6 +52,30 @@ export const useDashboard = () => {
     
     loadData();
   }, [refreshTrigger, currentFolderId]);
+
+  // Setup real-time sync
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const handleFoldersChanged = () => {
+      console.log('Folders changed, refreshing folder list');
+      folderOperations.loadFolders();
+    };
+
+    const handleFilesChanged = () => {
+      console.log('Files changed, refreshing file list');
+      fileOperations.loadFiles();
+    };
+
+    // Setup real-time listeners
+    const cleanup = setupRealtimeSync(
+      handleFoldersChanged,
+      handleFilesChanged,
+      currentFolderId
+    );
+
+    return cleanup;
+  }, [isAuthenticated, currentFolderId]);
   
   // Reset selection when folder changes
   useEffect(() => {
