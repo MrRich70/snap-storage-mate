@@ -12,7 +12,7 @@ interface DashboardHeaderProps {
   onBackClick: () => void;
   onRefresh: () => void;
   onCreateFolderClick: () => void;
-  onUploadClick: () => void;
+  onUploadClick: (e: React.MouseEvent) => void; // Update to accept the event
   isUploading: boolean;
 }
 
@@ -39,6 +39,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           onClick={onRefresh} 
           title="Refresh"
           className="ml-2"
+          type="button"
         >
           <RefreshCwIcon className="h-4 w-4" />
         </Button>

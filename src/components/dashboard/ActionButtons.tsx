@@ -5,7 +5,7 @@ import { FolderPlusIcon, UploadIcon, Loader2Icon } from 'lucide-react';
 
 interface ActionButtonsProps {
   onCreateFolderClick: () => void;
-  onUploadClick: () => void;
+  onUploadClick: (e: React.MouseEvent) => void;
   isUploading: boolean;
 }
 
@@ -21,6 +21,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         size="sm"
         className="flex items-center gap-1"
         onClick={onCreateFolderClick}
+        type="button"
       >
         <FolderPlusIcon className="h-4 w-4" />
         <span>New Folder</span>
@@ -28,9 +29,10 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
       
       <Button
         size="sm"
-        onClick={onUploadClick}
+        onClick={(e) => onUploadClick(e)}
         disabled={isUploading}
         className="relative"
+        type="button" // Explicitly set type to button to prevent form submission
       >
         {isUploading ? (
           <>

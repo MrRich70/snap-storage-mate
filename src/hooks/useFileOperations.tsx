@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { 
@@ -22,15 +21,12 @@ export const useFileOperations = (currentFolderId: string, refreshTrigger: numbe
   const [uploadingFile, setUploadingFile] = useState<boolean>(false);
   const [fileCache, setFileCache] = useState<Map<string, File>>(new Map());
   
-  // Modals for file operations
   const [renameFileModalOpen, setRenameFileModalOpen] = useState<boolean>(false);
   const [deleteFileModalOpen, setDeleteFileModalOpen] = useState<boolean>(false);
   const [viewFileModalOpen, setViewFileModalOpen] = useState<boolean>(false);
   
-  // Shared storage flag
   const SHARED_STORAGE = true;
   
-  // Load files for the current folder
   const loadFiles = useCallback(async () => {
     try {
       const folderFiles = await getFiles(currentFolderId, SHARED_STORAGE);
@@ -41,7 +37,6 @@ export const useFileOperations = (currentFolderId: string, refreshTrigger: numbe
     }
   }, [currentFolderId]);
   
-  // Monitor upload progress
   useEffect(() => {
     const interval = setInterval(() => {
       const currentUploads = getUploadProgress();
@@ -56,18 +51,23 @@ export const useFileOperations = (currentFolderId: string, refreshTrigger: numbe
     return () => clearInterval(interval);
   }, [setRefreshTrigger]);
   
-  // Upload file handler
-  const handleUploadClick = useCallback(() => {
+  const handleUploadClick = useCallback((e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
     fileInputRef.current?.click();
   }, []);
   
   const handleFileInputChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    
     const { files } = e.target;
     if (!files || files.length === 0) return;
     
     setUploadingFile(true);
     
     const newFileCache = new Map(fileCache);
+    const uploadPromises = [];
     
     try {
       for (let i = 0; i < files.length; i++) {
@@ -75,29 +75,34 @@ export const useFileOperations = (currentFolderId: string, refreshTrigger: numbe
         const cacheKey = `${currentFolderId}_${file.name}_${Date.now()}`;
         newFileCache.set(cacheKey, file);
         
-        uploadLocalFile(file, currentFolderId, SHARED_STORAGE)
-          .then(() => {
-            if (i === files.length - 1) {
-              setRefreshTrigger(prev => prev + 1);
-            }
-          })
+        const uploadPromise = uploadLocalFile(file, currentFolderId, SHARED_STORAGE)
           .catch((error) => {
             console.error('Upload error:', error);
             toast.error(`Failed to upload ${file.name}`);
           });
+          
+        uploadPromises.push(uploadPromise);
       }
       
       setFileCache(newFileCache);
+      
+      Promise.all(uploadPromises)
+        .then(() => {
+          setRefreshTrigger(prev => prev + 1);
+          toast.success(`${files.length} file(s) uploaded successfully`);
+        })
+        .finally(() => {
+          setUploadingFile(false);
+        });
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Failed to upload file(s)');
-    } finally {
       setUploadingFile(false);
+    } finally {
       e.target.value = '';
     }
   }, [currentFolderId, fileCache, setRefreshTrigger]);
   
-  // File operation handlers
   const handleRenameFileClick = useCallback((file: ImageFile) => {
     setSelectedFile(file);
     setRenameFileModalOpen(true);
@@ -131,7 +136,6 @@ export const useFileOperations = (currentFolderId: string, refreshTrigger: numbe
     setViewFileModalOpen(true);
   }, []);
   
-  // Upload management
   const handleRetryUpload = useCallback(async (uploadId: string) => {
     for (const [cacheKey, cachedFile] of fileCache.entries()) {
       if (cacheKey.includes(uploadId)) {
@@ -159,7 +163,6 @@ export const useFileOperations = (currentFolderId: string, refreshTrigger: numbe
     setUploadProgress(getUploadProgress());
   }, []);
   
-  // Load files when refreshTrigger changes
   useEffect(() => {
     loadFiles();
   }, [loadFiles, refreshTrigger]);
