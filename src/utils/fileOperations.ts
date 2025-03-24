@@ -4,11 +4,12 @@ import { v4 as uuidv4 } from 'uuid';
 import { uploadToSupabase } from '@/utils/fileUploader';
 import { toast } from 'sonner';
 import { broadcastFileChanged } from './realtimeSync';
+import { getUserStorageKey } from './storage';
 
-// Get all files in a folder - always use shared storage
-export const getFiles = async (folderId: string, isSharedStorage = true): Promise<ImageFile[]> => {
+// Get all files in a folder for the current user
+export const getFiles = async (folderId: string): Promise<ImageFile[]> => {
   try {
-    const storageKey = 'servpro_files'; // Always use shared storage key
+    const storageKey = `${getUserStorageKey()}_files`;
     const filesObj = JSON.parse(localStorage.getItem(storageKey) || '{}');
     return filesObj[folderId] || [];
   } catch (error) {
@@ -17,15 +18,16 @@ export const getFiles = async (folderId: string, isSharedStorage = true): Promis
   }
 };
 
-// Create/upload a new file - always use shared storage
-export const uploadFile = async (file: File, folderId: string, isSharedStorage = true): Promise<ImageFile> => {
+// Create/upload a new file for the current user
+export const uploadFile = async (file: File, folderId: string): Promise<ImageFile> => {
   try {
-    const storageKey = 'servpro_files'; // Always use shared storage key
+    const storageKey = `${getUserStorageKey()}_files`;
     const filesObj = JSON.parse(localStorage.getItem(storageKey) || '{}');
     
     // Upload the file to Supabase and get the public URL
     const fileId = uuidv4();
-    const url = await uploadToSupabase(file, folderId, true); // Force shared storage
+    const userId = localStorage.getItem('servpro_current_user') || 'anonymous';
+    const url = await uploadToSupabase(file, folderId, userId);
     
     // Use the actual URL from Supabase, not a local blob URL
     const thumbnailUrl = url;
@@ -59,10 +61,10 @@ export const uploadFile = async (file: File, folderId: string, isSharedStorage =
   }
 };
 
-// Rename a file - always use shared storage
-export const renameFile = async (fileId: string, newName: string, folderId: string, isSharedStorage = true): Promise<boolean> => {
+// Rename a file for the current user
+export const renameFile = async (fileId: string, newName: string, folderId: string): Promise<boolean> => {
   try {
-    const storageKey = 'servpro_files'; // Always use shared storage key
+    const storageKey = `${getUserStorageKey()}_files`;
     const filesObj = JSON.parse(localStorage.getItem(storageKey) || '{}');
     
     if (!filesObj[folderId]) return false;
@@ -88,10 +90,10 @@ export const renameFile = async (fileId: string, newName: string, folderId: stri
   }
 };
 
-// Delete a file - always use shared storage
-export const deleteFile = async (fileId: string, folderId: string, isSharedStorage = true): Promise<boolean> => {
+// Delete a file for the current user
+export const deleteFile = async (fileId: string, folderId: string): Promise<boolean> => {
   try {
-    const storageKey = 'servpro_files'; // Always use shared storage key
+    const storageKey = `${getUserStorageKey()}_files`;
     const filesObj = JSON.parse(localStorage.getItem(storageKey) || '{}');
     
     if (!filesObj[folderId]) return false;
@@ -118,10 +120,10 @@ export const deleteFile = async (fileId: string, folderId: string, isSharedStora
   }
 };
 
-// Move files to a different folder - always use shared storage
-export const moveFiles = async (fileIds: string[], sourceFolderId: string, targetFolderId: string, isSharedStorage = true): Promise<boolean> => {
+// Move files to a different folder for the current user
+export const moveFiles = async (fileIds: string[], sourceFolderId: string, targetFolderId: string): Promise<boolean> => {
   try {
-    const storageKey = 'servpro_files'; // Always use shared storage key
+    const storageKey = `${getUserStorageKey()}_files`;
     const filesObj = JSON.parse(localStorage.getItem(storageKey) || '{}');
     
     if (!filesObj[sourceFolderId]) return false;

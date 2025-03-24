@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -7,9 +8,6 @@ import { useFileOperations } from './useFileOperations';
 import { useFolderOperations } from './useFolderOperations';
 import { useSelectionOperations } from './useSelectionOperations';
 import { setupRealtimeSync } from '@/utils/realtimeSync';
-
-// Configuration for shared storage - always use shared storage
-const SHARED_STORAGE = true;
 
 export const useDashboard = () => {
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
@@ -40,8 +38,15 @@ export const useDashboard = () => {
       console.log('Loading dashboard data');
       setIsLoading(true);
       try {
-        // Always initialize with shared storage
-        initializeStorage(SHARED_STORAGE);
+        // Initialize with user-specific storage
+        if (user && user.id) {
+          console.log('Initializing storage for user:', user.id);
+          initializeStorage(user.id);
+        } else {
+          console.log('No user ID available, using anonymous storage');
+          initializeStorage();
+        }
+        
         folderOperations.loadFolders();
         await fileOperations.loadFiles();
       } catch (error) {
@@ -52,12 +57,16 @@ export const useDashboard = () => {
       }
     };
     
-    // Load data whether authenticated or not
-    loadData();
-  }, [refreshTrigger, currentFolderId]);
+    // Only load data if authenticated
+    if (isAuthenticated) {
+      loadData();
+    }
+  }, [refreshTrigger, currentFolderId, user, isAuthenticated]);
 
   // Setup real-time sync
   useEffect(() => {
+    if (!isAuthenticated) return;
+    
     console.log('Setting up real-time sync');
     
     const handleFoldersChanged = () => {
@@ -78,7 +87,7 @@ export const useDashboard = () => {
     );
 
     return cleanup;
-  }, [currentFolderId]);
+  }, [currentFolderId, isAuthenticated]);
   
   // Reset selection when folder changes
   useEffect(() => {

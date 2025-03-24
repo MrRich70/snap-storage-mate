@@ -1,4 +1,3 @@
-
 // Re-export all storage operations from the respective modules
 export * from './storageTypes';
 export * from './folderOperations';
@@ -9,7 +8,7 @@ export {
   downloadFile, 
   moveFiles, 
   moveFile,
-  uploadFile as uploadLocalFile 
+  uploadLocalFile 
 } from './fileOperations';
 export {
   getUploadProgress,
@@ -19,14 +18,20 @@ export {
   uploadToSupabase
 } from './uploadUtils';
 
-// Add initialization function for shared storage
-export const initializeStorage = (isSharedStorage = true) => {
-  // Set a localStorage flag for shared storage
-  localStorage.setItem('isSharedStorage', isSharedStorage ? 'true' : 'false');
+// Add initialization function for storage
+export const initializeStorage = (userId?: string) => {
+  // If userId is provided, use it to create a user-specific storage key
+  // Otherwise, fall back to shared storage for non-authenticated users
+  const userStorageKey = userId ? `servpro_${userId}` : 'servpro';
   
-  // Make sure the root folder exists
-  const storageKey = 'servpro_folders'; // Always use shared storage key
-  const folders = JSON.parse(localStorage.getItem(storageKey) || '[]');
+  // Store the current user ID in localStorage to be used by other functions
+  if (userId) {
+    localStorage.setItem('servpro_current_user', userId);
+  }
+  
+  // Make sure the root folder exists for this user
+  const foldersKey = `${userStorageKey}_folders`;
+  const folders = JSON.parse(localStorage.getItem(foldersKey) || '[]');
   
   if (!folders.some((folder: any) => folder.id === 'root')) {
     folders.push({
@@ -37,6 +42,12 @@ export const initializeStorage = (isSharedStorage = true) => {
       updatedAt: new Date().toISOString()
     });
     
-    localStorage.setItem(storageKey, JSON.stringify(folders));
+    localStorage.setItem(foldersKey, JSON.stringify(folders));
   }
+};
+
+// Helper to get the current user's storage key prefix
+export const getUserStorageKey = () => {
+  const userId = localStorage.getItem('servpro_current_user');
+  return userId ? `servpro_${userId}` : 'servpro';
 };

@@ -23,8 +23,8 @@ export const useFileLoading = (
   const loadFiles = useCallback(async () => {
     console.log('Loading files for folder:', currentFolderId);
     try {
-      // Always use shared storage for files to persist between sessions
-      const loadedFiles = await getFiles(currentFolderId, true);
+      // Use the user-specific storage
+      const loadedFiles = await getFiles(currentFolderId);
       console.log(`Loaded ${loadedFiles.length} files:`, loadedFiles);
       setFiles(loadedFiles);
     } catch (error) {

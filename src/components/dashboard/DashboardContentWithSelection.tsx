@@ -1,4 +1,3 @@
-
 import React from 'react';
 import FolderGrid from '@/components/FolderGrid';
 import ImageGrid from '@/components/ImageGrid';
@@ -6,7 +5,8 @@ import LoadingState from '@/components/dashboard/LoadingState';
 import SelectionControls from '@/components/dashboard/SelectionControls';
 import MoveFilesModal from '@/components/dashboard/MoveFilesModal';
 import { Folder, ImageFile } from '@/utils/storage';
-import { UsersIcon } from 'lucide-react';
+import { UserIcon } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 interface DashboardContentWithSelectionProps {
   isLoading: boolean;
@@ -59,6 +59,8 @@ const DashboardContentWithSelection: React.FC<DashboardContentWithSelectionProps
   currentFolderId,
   refreshFiles
 }) => {
+  const { user } = useAuth();
+  
   if (isLoading) {
     return <LoadingState />;
   }
@@ -66,10 +68,10 @@ const DashboardContentWithSelection: React.FC<DashboardContentWithSelectionProps
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Shared Workspace</h1>
+        <h1 className="text-2xl font-bold">My Workspace</h1>
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
-          <UsersIcon className="h-4 w-4" />
-          <span>All users share this workspace</span>
+          <UserIcon className="h-4 w-4" />
+          <span>{user?.email || 'Personal'} workspace</span>
         </div>
       </div>
       
