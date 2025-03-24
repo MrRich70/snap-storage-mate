@@ -57,12 +57,6 @@ const Index = () => {
                 Collaborate with team members using access codes
               </li>
             </ul>
-            <div className="mt-4 p-4 bg-muted rounded-lg">
-              <p className="text-sm font-medium">Team Access Code: servpro</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Use this code to sign up or log in to collaborate on shared image collections.
-              </p>
-            </div>
           </div>
           
           <div className="animate-slide-up animation-delay-200">
