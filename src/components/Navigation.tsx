@@ -28,16 +28,30 @@ const Navigation: React.FC<NavigationProps> = ({ onUpload }) => {
   const navigate = useNavigate();
   
   const handleLogout = async () => {
+    if (isSubmitting) return;
+    
     setIsSubmitting(true);
     try {
+      console.log('Navigation: Initiating logout...');
       await logout();
-      // Force navigation to home page after logout
-      navigate('/', { replace: true });
+      
+      // Force navigation to home page after logout and reset state
+      console.log('Navigation: Logout successful, navigating to home page...');
+      
+      // Add a small delay to allow the auth state to update
+      setTimeout(() => {
+        navigate('/', { replace: true });
+        setIsSubmitting(false);
+      }, 100);
     } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Failed to log out. Please try again.');
-    } finally {
+      console.error('Navigation: Logout error:', error);
+      toast.error('Failed to log out. Please refresh the page and try again.');
       setIsSubmitting(false);
+      
+      // As a fallback, force navigation to the home page
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
     }
   };
 

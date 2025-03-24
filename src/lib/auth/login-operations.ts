@@ -99,30 +99,48 @@ export const loginWithPassword = async (
 export const logoutUser = async (): Promise<void> => {
   try {
     console.log('Logging out user...');
-    const { error } = await supabase.auth.signOut();
     
-    if (error) {
-      console.error('Logout error:', error);
-      toast.error('Logout failed: ' + error.message);
-      return;
-    }
-    
-    // Clear any local storage items that might be keeping state
-    localStorage.removeItem('supabase.auth.token');
-    
-    // Also clear any application specific storage
-    const sharedStorageItems = Object.keys(localStorage).filter(key => 
-      key.startsWith('servpro_')
+    // First, try to clear any app-specific local storage
+    const appStorageKeys = Object.keys(localStorage).filter(key => 
+      key.startsWith('servpro_') || key.includes('supabase')
     );
     
-    sharedStorageItems.forEach(key => {
-      localStorage.removeItem(key);
+    appStorageKeys.forEach(key => {
+      try {
+        console.log('Clearing local storage item:', key);
+        localStorage.removeItem(key);
+      } catch (e) {
+        console.error('Error clearing local storage item:', key, e);
+      }
     });
+    
+    // Then, try to sign out from Supabase
+    const { error } = await supabase.auth.signOut({
+      scope: 'global' // Sign out from all tabs/windows
+    });
+    
+    if (error) {
+      console.error('Supabase logout error:', error);
+      // Continue with client-side logout even if server logout fails
+    }
+    
+    // Force clear any Supabase related storage items that might be keeping state
+    try {
+      localStorage.removeItem('supabase.auth.token');
+      sessionStorage.removeItem('supabase.auth.token');
+      localStorage.removeItem('sb-yipsbfttmpfeqzxxoiiv-auth-token');
+      sessionStorage.removeItem('sb-yipsbfttmpfeqzxxoiiv-auth-token');
+    } catch (e) {
+      console.error('Error clearing auth tokens:', e);
+    }
     
     console.log('User logged out successfully');
     toast.info('You have been logged out');
   } catch (error) {
     console.error('Logout error:', error);
-    toast.error('Logout failed');
+    toast.error('Logout failed. Please refresh the page and try again.');
+    
+    // As a last resort, try to reload the page to clear the session state
+    window.location.href = '/';
   }
 };
